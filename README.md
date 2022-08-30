@@ -1,5 +1,5 @@
 # lis-autocontent
-Generates content for jekyll collections and populates JBrowse2 instances from https://data.legumeinfo.org
+Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various configs and databases for deployment
 
 ## Reqiurements
 
