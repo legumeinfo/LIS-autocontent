@@ -9,10 +9,10 @@ Generates content for jekyll collections and populates JBrowse2 instances from h
 
 ## Install
 
-1. Clone repository. `git clone https://github.com/ctcncgr/lis-autocontent.git`
+1. Clone repository. `git clone https://github.com/legumeinfo/LIS-autocontent.git`
 2. Create a virtual environment for python3 `/path/to/python3/bin/virtualenv autocontent_env`
 3. Source virtual environment `. ./autocontent_env/bin/activate`
-4. Install requirements. `pip install -r ./lis-autocontent/requirements.txt`
+4. Install requirements. `pip install -r ./LIS-autocontent/requirements.txt`
 
 ## Run
 
