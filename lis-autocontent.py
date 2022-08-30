@@ -6,7 +6,7 @@ import cli.lis_cli as lis_cli
 
 @click.group()
 def cli():
-    '''CLI entry for populate-jekyll'''
+    '''CLI entry for LIS-autocontent'''
     pass
 
 

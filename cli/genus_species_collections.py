@@ -149,7 +149,7 @@ class ProcessCollections():
                                     url = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz'
                                 self.files[collectionType][lookup] = {'url': url, 'name': lookup, 'parent': parent,
                                                                       'genus': genus, 'species': species,
-                                                                      'infraspecies': parts[1], 'taxid'}  # add type and url
+                                                                      'infraspecies': parts[1], 'taxid': 0}  # add type and url
 #                                print(f'this thing {self.files}')
                                 readmeUrl = f'{self.datastore_url}/{collectionDir}README.{name}.yml'
                                 readmeResponse = requests.get(readmeUrl)
@@ -175,4 +175,3 @@ class ProcessCollections():
 if __name__ == '__main__':
     parser = ProcessCollections()
     parser.parse_collections()
-    parser.deploy_jbrowse2()

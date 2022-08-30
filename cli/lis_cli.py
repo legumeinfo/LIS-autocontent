@@ -10,9 +10,9 @@ from .genus_species_collections import ProcessCollections
 @click.option('--collections_out', default="../_data/taxa/", help='''Output for collections.''')
 def populate_jekyll(taxa_list, collections_out):
     '''CLI entry for populate-jekyll'''
-    click.echo("Populating Collections...")
+    click.echo("Processing Collections...")
     parser = ProcessCollections()  # initialize class
-    click.echo("Generating Collections...")
+    click.echo("Outputting Collections...")
     parser.parse_collections(taxa_list, collections_out)  # parse_collections
 
 @click.command()
@@ -20,11 +20,11 @@ def populate_jekyll(taxa_list, collections_out):
 @click.option('--jbrowse_out', default="/var/www/html/jbrowse2_autodeploy", help='''Output directory for Jbrowse2. (Default: /var/www/html/jbrowse2_autodeploy)''')
 @click.option('--cmds_only', is_flag=True, help='''Output commands only. Do not run Jbrowse2 just output the commands that would be run.''')
 def populate_jbrowse2(taxa_list, jbrowse_out, cmds_only):
-    '''CLI entry for deploy-jbrowse2'''
-    click.echo("Populating Collections...")
+    '''CLI entry for populate-jbrowse2'''
+    click.echo("Processing Collections...")
     parser = ProcessCollections()  # initialize class
     parser.parse_collections(taxa_list)  # parse_collections
-    click.echo("Creating JBrowse Instance...")
+    click.echo("Creating JBrowse2 Config...")
     parser.populate_jbrowse2(jbrowse_out, cmds_only)  # populate JBrowse2
 
 @click.command()
@@ -33,8 +33,8 @@ def populate_jbrowse2(taxa_list, jbrowse_out, cmds_only):
 @click.option('--cmds_only', is_flag=True, help='''Output commands only. Do not run makeblastdb just output the commands that would be run.''')
 def populate_blast(taxa_list, blast_out, cmds_only):
     '''CLI entry for populate-blast'''
-    click.echo("Populating Collections...")
+    click.echo("Processing Collections...")
     parser = ProcessCollections()  # initialize class
     parser.parse_collections(taxa_list)  # parse_collections
-    click.echo("Creating BLAST Instance...")
+    click.echo("Creating BLAST DBs...")
     parser.populate_blast(blast_out, cmds_only)  # populate BLAST
