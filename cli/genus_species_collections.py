@@ -3,6 +3,7 @@
 import os
 import sys
 import yaml
+import json
 import pathlib
 import requests
 import subprocess
@@ -17,6 +18,7 @@ class ProcessCollections():
         self.datastore_url = datastore_url  # URL to search for collections
         self.out_dir = "/var/www/html/jbrowse_autodeploy"  # out dir for jbrowse2 tracks
         self.files = {}  # get types for making jbrowse2
+        self.file_objects = []  # make a list of all file objects to write for DSCensor nodes
         self.collection_types = ["genomes", "annotations", "diversity", "expression",
                                  "genetic", "markers"]  # types to search for
 
@@ -55,25 +57,31 @@ class ProcessCollections():
                # jbrowse add-assembly -a alis -n "full name" --out /path/to/jbrowse2 URL
                 cmd = ''
                 url = self.files[collectionType][file]['url']
+                if not url:  # do not take objects with no defined link
+                    continue
                 name = self.files[collectionType][file]['name']
                 genus = self.files[collectionType][file]['genus']
                 parent = self.files[collectionType][file]['parent']
                 species = self.files[collectionType][file]['species']
                 infraspecies = self.files[collectionType][file]['infraspecies']
-                if collectionType == 'genomes':  # add genome for jbrowse-components
-                    if mode == "jbrowse":
+                filetype = url.split('.')[-3]  # get file type from datastore file name
+                self.file_objects.append({'filename' : name, 'filetype' : filetype, 'url' : url, 'counts' : '',
+                                          'genus' : genus, 'species' : species, 'origin' : 'LIS', 
+                                          'infraspecies' : infraspecies, 'derived_from' : parent})
+                if collectionType == 'genomes':  # add genome
+                    if mode == "jbrowse":  # for jbrowse
                         cmd = f'jbrowse add-assembly -a {name} --out {self.out_dir}/ -t bgzipFasta --force'
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}" {url}'
-                    elif mode == "blast":
+                    elif mode == "blast":  # for blast
                         cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
-                if collectionType == 'annotations':  # add annotation for jbrowse-components
-                    if mode == "jbrowse":
+                if collectionType == 'annotations':  # add annotation
+                    if mode == "jbrowse":  # for jbrowse
                         cmd = f'jbrowse add-track -a {parent} --out {self.out_dir}/ --force'
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}" {url}'
                 # MORE CANONICAL TYPES HERE
-                if not cmd:  # return for null objects
-                    return
+                if not cmd:  # continue for null objects
+                    continue
                 if cmds_only:  # output only cmds
                     print(cmd)
                 elif subprocess.check_call(cmd, shell=True):  # execute cmd and check exit value = 0
@@ -90,6 +98,16 @@ class ProcessCollections():
         self.out_dir = out_dir
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
         self.process_collections(cmds_only, "blast")  # process collections for BLAST sequenceserver
+
+    def populate_dscensor(self, out_dir="/var/www/html/dscensor/"):
+        '''Populate dscensor nodes for loading into a neo4j database'''
+        self.out_dir = out_dir
+        pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
+        self.process_collections(True, "dscensor")  # process collections for DSCENSOR
+        for n in self.file_objects:
+            node_out = open(f'{self.out_dir}/{n["filename"]}.json', 'w')  # file to write node to
+            node_out.write(json.dumps(n))
+            node_out.close()
 
     def parse_collections(self, target="../_data/taxon_list.yml", species_collections=None):
         '''Retrieve and output collections for jekyll site'''
