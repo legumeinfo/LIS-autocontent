@@ -13,7 +13,10 @@ from html.parser import HTMLParser
 class ProcessCollections():
     '''Parses Collections from the datastore at https://data.legumeinfo.org'''
 
-    def __init__(self, datastore_url="https://data.legumeinfo.org"):
+    def __init__(self, logger=None, datastore_url="https://data.legumeinfo.org"):
+        self.logger = logger
+        if self.logger:
+            self.logger.info('logger initialized')
         self.collections = []  # get collections for writing site
         self.datastore_url = datastore_url  # URL to search for collections
         self.out_dir = "/var/www/html/jbrowse_autodeploy"  # out dir for jbrowse2 tracks
@@ -73,19 +76,26 @@ class ProcessCollections():
                         cmd = f'jbrowse add-assembly -a {name} --out {self.out_dir}/ -t bgzipFasta --force'
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
+                        continue
                         cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
                 if collectionType == 'annotations':  # add annotation
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f'jbrowse add-track -a {parent} --out {self.out_dir}/ --force'
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}" {url}'
+                    elif mode == "blast":  # for blast
+                        if not url.endswith('faa.gz'):
+                            continue
+                        cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
+                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
+
                 # MORE CANONICAL TYPES HERE
                 if not cmd:  # continue for null objects
                     continue
                 if cmds_only:  # output only cmds
                     print(cmd)
-                elif subprocess.check_call(cmd, shell=True):  # execute cmd and check exit value = 0
-                    print("ERROR: {cmd}")
+                elif subprocess.check_call(cmd, shell=True, executable='/bin/bash'):  # execute cmd and check exit value = 0
+                    logger.error(f"ERROR: {cmd}")
 
     def populate_jbrowse2(self, out_dir="/var/www/html/jbrowse2_autodeploy", cmds_only=False):
         '''deploy jbrowse2 from collected objects'''
@@ -112,11 +122,12 @@ class ProcessCollections():
     def parse_collections(self, target="../_data/taxon_list.yml", species_collections=None):
         '''Retrieve and output collections for jekyll site'''
         #print(target)
+        logger = self.logger
         taxonList = yaml.load(open(target, 'r').read(),
                                    Loader=yaml.FullLoader)  # load taxon list
         for taxon in taxonList:
             if not 'genus' in taxon:
-                print('ERROR GENOME REQUIRED: {taxon}')  # change to log
+                logger.debug('ERROR GENOME REQUIRED: {taxon}')  # change to log
                 sys.exit(1)
             genus = taxon['genus']
             genusDescriptionUrl = f'{self.datastore_url}/{genus}/GENUS/about_this_collection/description_{genus}.yml'
@@ -165,6 +176,26 @@ class ProcessCollections():
                                     self.files['genomes'][genome_lookup]['url']
                                     parent = genome_lookup
                                     url = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz'
+                                    testurl = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.protein_primary.faa.gz'
+                                    testResponse = requests.get(testurl)
+                                    if testResponse.status_code==200:
+                                        protein_lookup = f'{lookup}.protein_primary'
+                                        self.files[collectionType][protein_lookup] = {'url': testurl, 'name': protein_lookup, 'parent': parent,
+                                                                                      'genus': genus, 'species': species,
+                                                                                      'infraspecies': parts[1], 'taxid': 0}
+                                    else:
+                                        logger.debug(f'TestUrl(PrimaryProtien):Failed {testResponse}')
+
+                                    proteinurl =f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.protein.faa.gz'
+                                    protein_response = requests.get(proteinurl)
+                                    if protein_response.status_code==200:
+                                        protein_lookup2 = f'{lookup}.protein'
+                                        self.files[collectionType][protein_lookup2] = {'url': proteinurl, 'name': protein_lookup2, 'parent': parent,
+                                                                                      'genus': genus, 'species': species,
+                                                                                      'infraspecies': parts[1], 'taxid': 0}
+                                    else:
+                                        logger.debug(f'proteinurl(Protein):Failed {protein_response}')
+
                                 self.files[collectionType][lookup] = {'url': url, 'name': lookup, 'parent': parent,
                                                                       'genus': genus, 'species': species,
                                                                       'infraspecies': parts[1], 'taxid': 0}  # add type and url
@@ -180,13 +211,13 @@ class ProcessCollections():
                                         print('    - collection: '+name, file=speciesCollectionsFile)
                                         print('      synopsis: "'+synopsis+'"', file=speciesCollectionsFile)
                                 else:  # README FAILURE
-                                    print(f'GET Failed for README {readmeResponse.status_code} {readmeUrl}')  # change to log
+                                    logger.warning(f'GET Failed for README {readmeResponse.status_code} {readmeUrl}')  # change to log
 #                                    sys.exit(1)
                         else:  # Collections FAILUTRE
-                            print(f'GET Failed for collections {collectionsResponse.status_code} {collectionsUrl}')  # change to log
+                            logger.warning(f'GET Failed for collections {collectionsResponse.status_code} {collectionsUrl}')  # change to log
 #                            sys.exit(1)
             else:  # FAILURE
-                print(f'GET Failed for genus {genusDescriptionResponse.status_code} {genusDescriptionUrl}')  # change to log
+                logger.warning(f'GET Failed for genus {genusDescriptionResponse.status_code} {genusDescriptionUrl}')  # change to log
 #                sys.exit(1)
 
 
