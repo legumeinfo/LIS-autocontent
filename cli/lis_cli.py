@@ -20,9 +20,10 @@ def populate_jekyll(taxa_list, collections_out):
 @click.command()
 @click.option('--taxa_list', default="../_data/taxon_list.yml", help='''Taxa.yml file. (Default: ../_data/taxon_list.yml)''')
 @click.option('--nodes_out', default="/var/www/html/dscensor", help='''Output for dscensor nodes.''')
-def populate_dscensor(taxa_list, nodes_out):
+@click.option('--log_level', default="INFO", help='''Log Level to output messages. (default: INFO)''')
+def populate_dscensor(taxa_list, nodes_out, log_level):
     '''CLI entry for populate-jekyll'''
-    logger = setup_logging('./testme.log', '', 'populate-dscensor') 
+    logger = setup_logging('./testme.log', log_level, 'populate-dscensor') 
     logger.info("Processing Collections...")
     parser = ProcessCollections(logger)  # initialize class
     parser.parse_collections(taxa_list)  # parse_collections
@@ -33,9 +34,10 @@ def populate_dscensor(taxa_list, nodes_out):
 @click.option('--taxa_list', default="../_data/taxon_list.yml", help='''Taxa.yml file. (Default: ../_data/taxon_list.yml)''')
 @click.option('--jbrowse_out', default="/var/www/html/jbrowse2_autodeploy", help='''Output directory for Jbrowse2. (Default: /var/www/html/jbrowse2_autodeploy)''')
 @click.option('--cmds_only', is_flag=True, help='''Output commands only. Do not run Jbrowse2 just output the commands that would be run.''')
-def populate_jbrowse2(taxa_list, jbrowse_out, cmds_only):
+@click.option('--log_level', default="INFO", help='''Log Level to output messages. (default: INFO)''')
+def populate_jbrowse2(taxa_list, jbrowse_out, cmds_only, log_level):
     '''CLI entry for populate-jbrowse2'''
-    logger = setup_logging('./testme.log', '', 'populate-jbrowse2') 
+    logger = setup_logging('./testme.log', log_level, 'populate-jbrowse2') 
     logger.info("Processing Collections...")
     parser = ProcessCollections(logger)  # initialize class
     parser.parse_collections(taxa_list)  # parse_collections

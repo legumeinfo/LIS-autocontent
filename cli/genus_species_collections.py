@@ -23,7 +23,7 @@ class ProcessCollections():
         self.files = {}  # get types for making jbrowse2
         self.file_objects = []  # make a list of all file objects to write for DSCensor nodes
         self.collection_types = ["genomes", "annotations", "diversity", "expression",
-                                 "genetic", "markers"]  # types to search for
+                                 "genetic", "markers", "synteny"]  # types to search for
 
     def parse_attributes(self, response_text):  # inherited from Sammyjava 
         '''parses attributes returned from HTMLParser. Credit to SammyJava'''
@@ -41,7 +41,8 @@ class ProcessCollections():
                             or (attr[0]=='href' and "/expression/" in attr[1])
                             or (attr[0]=='href' and "/genetic/" in attr[1])
                             or (attr[0]=='href' and "/genomes/" in attr[1])
-                            or (attr[0]=='href' and "/markers/" in attr[1])):
+                            or (attr[0]=='href' and "/markers/" in attr[1])
+                            or (attr[0]=='href' and "/synteny/" in attr[1])):
                         collections.append(attr[1])
         CollectionsParser().feed(response_text)  # populate collections
         self.collections = collections  # set self.collections
@@ -87,8 +88,17 @@ class ProcessCollections():
                         if not url.endswith('faa.gz'):
                             continue
                         cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
-                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
-
+                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'              
+#Quick Note: Change senteny and diversity cmd jbrowse lines later. They are like this for now just to see if it will even work.
+                if collectionType == 'senteny':  # add senteny
+                    if mode == "jbrowse":  # for jbrowse
+                        cmd = f'jbrowse add-track -a {name} --out {self.out_dir}/ --force'
+                        cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}" {url}'
+                    elif mode == "blast":  # for blast
+                        continue
+                        cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
+                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
+    
                 # MORE CANONICAL TYPES HERE
                 if not cmd:  # continue for null objects
                     continue
@@ -123,8 +133,9 @@ class ProcessCollections():
         '''Retrieve and output collections for jekyll site'''
         #print(target)
         logger = self.logger
+        yamlStandard = (open('TEST.yaml', 'w'))
         taxonList = yaml.load(open(target, 'r').read(),
-                                   Loader=yaml.FullLoader)  # load taxon list
+                                     Loader=yaml.FullLoader)  # load taxon list
         for taxon in taxonList:
             if not 'genus' in taxon:
                 logger.debug('ERROR GENOME REQUIRED: {taxon}')  # change to log
@@ -163,7 +174,7 @@ class ProcessCollections():
                             self.parse_attributes(collectionsResponse.text)  # Feed response from GET
                             for collectionDir in self.collections:
                                 parts = collectionDir.split('/')
-#                                print(parts)
+                                logger.debug(parts)
                                 name = parts[4]
                                 url = ''
                                 parent = ''
@@ -171,30 +182,44 @@ class ProcessCollections():
                                 lookup = f"{parts[0]}.{'.'.join(name.split('.')[:-1])}"  # reference name in datastructure
                                 if(collectionType == 'genomes'):  # add parent genomes
                                     url = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.genome_main.fna.gz'
+                                    print(url)
                                 if(collectionType == 'annotations'):
                                     genome_lookup = '.'.join(lookup.split('.')[:-1])  # grab genome
                                     self.files['genomes'][genome_lookup]['url']
                                     parent = genome_lookup
                                     url = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz'
-                                    testurl = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.protein_primary.faa.gz'
-                                    testResponse = requests.get(testurl)
-                                    if testResponse.status_code==200:
-                                        protein_lookup = f'{lookup}.protein_primary'
-                                        self.files[collectionType][protein_lookup] = {'url': testurl, 'name': protein_lookup, 'parent': parent,
+                                    protprimaryUrl = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.protein_primary.faa.gz'
+                                    protprimaryResponse = requests.get(protprimaryUrl)
+                                    if protprimaryResponse.status_code==200:
+                                        protprimary_lookup = f'{lookup}.protein_primary'
+                                        self.files[collectionType][protprimary_lookup] = {'url': protprimaryUrl, 'name': protprimary_lookup, 'parent': parent,
                                                                                       'genus': genus, 'species': species,
                                                                                       'infraspecies': parts[1], 'taxid': 0}
                                     else:
-                                        logger.debug(f'TestUrl(PrimaryProtien):Failed {testResponse}')
+                                        logger.debug(f'protprimaryUrl(PrimaryProtien):Failed {protprimaryResponse}')
 
-                                    proteinurl =f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.protein.faa.gz'
-                                    protein_response = requests.get(proteinurl)
+                                    proteinUrl =f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.protein.faa.gz'
+                                    protein_response = requests.get(proteinUrl)
                                     if protein_response.status_code==200:
-                                        protein_lookup2 = f'{lookup}.protein'
-                                        self.files[collectionType][protein_lookup2] = {'url': proteinurl, 'name': protein_lookup2, 'parent': parent,
+                                        protein_lookup = f'{lookup}.protein'
+                                        self.files[collectionType][protein_lookup] = {'url': proteinUrl, 'name': protein_lookup, 'parent': parent,
                                                                                       'genus': genus, 'species': species,
                                                                                       'infraspecies': parts[1], 'taxid': 0}
                                     else:
-                                        logger.debug(f'proteinurl(Protein):Failed {protein_response}')
+                                        logger.debug(f'proteinUrl(Protein):Failed {protein_response}')
+
+                                if(collectionType == 'synteny'):
+#                                   checksum reader
+                                    checksumUrl = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.CHECKSUM.md5'
+                                    checkResponse = requests.get(checksumUrl)
+                                    if checkResponse.status_code==200:
+                                        openCheck = open(checksumUrl)
+                                        for line in openCheck:
+                                            sytenyUrl = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.{line}'
+                                            yamlStandard.write('{sytenyUrl}')
+                                    else:  #CheckSum FAILURE
+                                        logger.warning(f'GET Failed for checksum {checkResponse.status_code} {checksumUrl}')   
+
 
                                 self.files[collectionType][lookup] = {'url': url, 'name': lookup, 'parent': parent,
                                                                       'genus': genus, 'species': species,
