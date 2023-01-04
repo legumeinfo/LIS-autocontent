@@ -77,7 +77,6 @@ class ProcessCollections():
                         cmd = f'jbrowse add-assembly -a {name} --out {self.out_dir}/ -t bgzipFasta --force'
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
-                        continue
                         cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
                 if collectionType == 'annotations':  # add annotation
@@ -95,9 +94,9 @@ class ProcessCollections():
                         cmd = f'jbrowse add-track -a {name} --out {self.out_dir}/ --force'
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
-                        continue
-                        cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
-                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
+                        continue  # synteny is not blastable at the moment
+#                        cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
+#                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
     
                 # MORE CANONICAL TYPES HERE
                 if not cmd:  # continue for null objects
@@ -158,7 +157,7 @@ class ProcessCollections():
                     print('---', file=speciesCollectionsFile)
                     print('species:', file=speciesCollectionsFile)
                 for species in genusDescription["species"]:
-                    print("### "+taxon["genus"]+" "+species)
+                    logger.info(f"Searching {self.datastore_url} for: "+taxon["genus"]+" "+species)
                     if speciesCollectionsFilename:
                         print('- '+'name: '+species, file=speciesCollectionsFile)
                     speciesUrl = f'{self.datastore_url}/{genus}/{species}'
@@ -182,7 +181,7 @@ class ProcessCollections():
                                 lookup = f"{parts[0]}.{'.'.join(name.split('.')[:-1])}"  # reference name in datastructure
                                 if(collectionType == 'genomes'):  # add parent genomes
                                     url = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.genome_main.fna.gz'
-                                    print(url)
+                                    logger.debug(url)
                                 if(collectionType == 'annotations'):
                                     genome_lookup = '.'.join(lookup.split('.')[:-1])  # grab genome
                                     self.files['genomes'][genome_lookup]['url']
@@ -218,13 +217,12 @@ class ProcessCollections():
                                             sytenyUrl = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.{line}'
                                             yamlStandard.write('{sytenyUrl}')
                                     else:  #CheckSum FAILURE
-                                        logger.warning(f'GET Failed for checksum {checkResponse.status_code} {checksumUrl}')   
+                                        logger.debug(f'GET Failed for checksum {checkResponse.status_code} {checksumUrl}')   
 
 
                                 self.files[collectionType][lookup] = {'url': url, 'name': lookup, 'parent': parent,
                                                                       'genus': genus, 'species': species,
                                                                       'infraspecies': parts[1], 'taxid': 0}  # add type and url
-#                                print(f'this thing {self.files}')
                                 readmeUrl = f'{self.datastore_url}/{collectionDir}README.{name}.yml'
                                 readmeResponse = requests.get(readmeUrl)
                                 if readmeResponse.status_code==200:
@@ -236,10 +234,10 @@ class ProcessCollections():
                                         print('    - collection: '+name, file=speciesCollectionsFile)
                                         print('      synopsis: "'+synopsis+'"', file=speciesCollectionsFile)
                                 else:  # README FAILURE
-                                    logger.warning(f'GET Failed for README {readmeResponse.status_code} {readmeUrl}')  # change to log
+                                    logger.debug(f'GET Failed for README {readmeResponse.status_code} {readmeUrl}')  # change to log
 #                                    sys.exit(1)
                         else:  # Collections FAILUTRE
-                            logger.warning(f'GET Failed for collections {collectionsResponse.status_code} {collectionsUrl}')  # change to log
+                            logger.debug(f'GET Failed for collections {collectionsResponse.status_code} {collectionsUrl}')  # change to log
 #                            sys.exit(1)
             else:  # FAILURE
                 logger.warning(f'GET Failed for genus {genusDescriptionResponse.status_code} {genusDescriptionUrl}')  # change to log
