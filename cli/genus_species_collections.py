@@ -52,7 +52,7 @@ class ProcessCollections():
         gensp = f'{parts[1].lower()[:3]}{parts[2][:2]}'  # make gensp
         strain = parts[-2]  # get strain and key information
         return (gensp, strain)
-
+ 
     def process_collections(self, cmds_only, mode):
         '''General method to create a jbrowse-components config or populate a blast db using mode'''
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
@@ -142,25 +142,42 @@ class ProcessCollections():
             genus = taxon['genus']
             genusDescriptionUrl = f'{self.datastore_url}/{genus}/GENUS/about_this_collection/description_{genus}.yml'
             genusDescriptionResponse = requests.get(genusDescriptionUrl)
-            speciesCollectionsFile = None
-            if genusDescriptionResponse.status_code==200:  # Genus Description yml SUCCESS
+            speciesCollectionsFile = None  # yaml file to write for species collections
+            genusResourcesFile = None  # yaml file to write for genus resources
+            speciesResourcesFile = None  # yaml file to write for species resources
+            if genusDescriptionResponse.status_code == 200:  # Genus Description yml SUCCESS
                 speciesCollectionsFilename = None
                 genusDescription = yaml.load(genusDescriptionResponse.text, Loader=yaml.FullLoader)
                 if species_collections:
                     collection_dir = f'{os.path.abspath(species_collections)}/{taxon["genus"]}'
                     pathlib.Path(collection_dir).mkdir(parents=True, exist_ok=True)
                     speciesCollectionsFilename = f'{collection_dir}/species_collections.yml'
+                    genusResourcesFilename = f'{collection_dir}/genus_resources.yml'
+                    speciesResourcesFilename = f'{collection_dir}/species_resources.yml'
 #                if not speciesCollectionsFilename:
 #                    speciesCollectionsFilename = "../_data/taxa/"+taxon["genus"]+"/species_collections.yml"  # change this to fstring
                 if speciesCollectionsFilename:
                     speciesCollectionsFile = open(speciesCollectionsFilename, 'w')
                     print('---', file=speciesCollectionsFile)
                     print('species:', file=speciesCollectionsFile)
+                    genusResourcesFile = open(genusResourcesFilename, 'w')
+                    speciesResourcesFile = open(speciesResourcesFilename, 'w')
+                    print("---", file=genusResourcesFile)
+                    yaml.dump(genusDescription, genusResourcesFile)
+                    ## species loop
+                    print("---", file=speciesResourcesFile)
+                    print("species:", file=speciesResourcesFile)
+                speciesDescriptions = []
                 for species in genusDescription["species"]:
                     logger.info(f"Searching {self.datastore_url} for: "+taxon["genus"]+" "+species)
                     if speciesCollectionsFilename:
                         print('- '+'name: '+species, file=speciesCollectionsFile)
                     speciesUrl = f'{self.datastore_url}/{genus}/{species}'
+                    speciesDescriptionUrl = f'{speciesUrl}/about_this_collection/description_{genus}_{species}.yml'
+                    speciesDescriptionResponse = requests.get(speciesDescriptionUrl)
+                    if speciesDescriptionResponse.status_code == 200:
+                        speciesDescription = yaml.load(speciesDescriptionResponse.text, Loader=yaml.FullLoader)  # load the yaml from the datastore for species
+                        speciesDescriptions.append(speciesDescription)
                     for collectionType in self.collection_types:
                         if collectionType not in self.files:  # add new type
                             self.files[collectionType] = {}
@@ -239,6 +256,9 @@ class ProcessCollections():
                         else:  # Collections FAILUTRE
                             logger.debug(f'GET Failed for collections {collectionsResponse.status_code} {collectionsUrl}')  # change to log
 #                            sys.exit(1)
+#                    logger.info(f'{}')
+                ## dump out species_resources.yml
+                yaml.dump(speciesDescriptions, speciesResourcesFile)
             else:  # FAILURE
                 logger.warning(f'GET Failed for genus {genusDescriptionResponse.status_code} {genusDescriptionUrl}')  # change to log
 #                sys.exit(1)
