@@ -207,7 +207,7 @@ class ProcessCollections():
                                     linear_session = {
                                         "views": [
                                             {"assembly": lookup,
-#                                            " loc ": " ctgA :1 -5100" ,
+                                             "loc": "" ,
                                              "type": "LinearGenomeView",
 #                                            "tracks": [
 #                                                " gff3tabix_genes " ,
@@ -220,12 +220,12 @@ class ProcessCollections():
                                     }
                                     strain_lookup = lookup.split('.')[1]  # the strain for the lookup
                                     linear_url = f'{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}'
-                                    linear_data = {'name': f'JBrowse2 {lookup}', 'URL': str(linear_url), 'description': 'JBrowse2 Linear Genome View'}
+                                    print(str(linear_url).replace("'", '\\"'))
+                                    linear_data = {'name': f'JBrowse2 {lookup}', 'URL': str(linear_url).replace("'", '\\"'), 
+                                                   'description': 'JBrowse2 Linear Genome View'}
                                     if strain_lookup not in strain_resources:
                                         strain_resources[strain_lookup] = []  # init list
-                                    strain_resources[strain_lookup].append({'name': f'JBrowse2 {lookup}', 
-                                                                            'URL': str(linear_url),
-                                                                            'description': 'JBrowse2 Linear Genome View'})
+                                    strain_resources[strain_lookup].append(linear_data)
                                     logger.debug(url)
                                 if(collectionType == 'annotations'):
                                     genome_lookup = '.'.join(lookup.split('.')[:-1])  # grab genome
