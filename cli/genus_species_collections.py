@@ -220,7 +220,6 @@ class ProcessCollections():
                                     }
                                     strain_lookup = lookup.split('.')[1]  # the strain for the lookup
                                     linear_url = f'{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}'
-                                    print(str(linear_url).replace("'", '\\"'))
                                     linear_data = {'name': f'JBrowse2 {lookup}', 'URL': str(linear_url).replace("'", '\\"'), 
                                                    'description': 'JBrowse2 Linear Genome View'}
                                     if strain_lookup not in strain_resources:
