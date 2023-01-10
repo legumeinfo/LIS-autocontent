@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import sys
 import click
 from.lis_common import setup_logging
 from .genus_species_collections import ProcessCollections
@@ -32,15 +33,19 @@ def populate_dscensor(taxa_list, nodes_out, log_file, log_level):
     parser.populate_dscensor(nodes_out)  # populate JBrowse2
 
 @click.command()
+@click.option('--jbrowse_url', help='''URL hosting JBrowse2''')
 @click.option('--taxa_list', default="../_data/taxon_list.yml", help='''Taxa.yml file. (Default: ../_data/taxon_list.yml)''')
 @click.option('--jbrowse_out', default="/var/www/html/jbrowse2_autodeploy", help='''Output directory for Jbrowse2. (Default: /var/www/html/jbrowse2_autodeploy)''')
 @click.option('--cmds_only', is_flag=True, help='''Output commands only. Do not run Jbrowse2 just output the commands that would be run.''')
 @click.option('--log_file', default="./populate-jbrowse2.log", help='''Log file to output messages. (default: ./populate-jbrowse2.log)''')
 @click.option('--log_level', default="INFO", help='''Log Level to output messages. (default: INFO)''')
-def populate_jbrowse2(taxa_list, jbrowse_out, cmds_only, log_file, log_level):
+def populate_jbrowse2(jbrowse_url, taxa_list, jbrowse_out, cmds_only, log_file, log_level):
     '''CLI entry for populate-jbrowse2'''
     logger = setup_logging(log_file, log_level, 'populate-jbrowse2')
-    parser = ProcessCollections(logger)  # initialize class
+    if not jbrowse_url:
+        logger.error('--jbrowse_url required for populate-jbrowse2')
+        sys.exit(1)
+    parser = ProcessCollections(logger, jbrowse_url=jbrowse_url)  # initialize class
     logger.info("Processing Collections...")
     parser.parse_collections(taxa_list, jbrowse_out)  # parse_collections
     logger.info("Creating JBrowse2 Config...")
