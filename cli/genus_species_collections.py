@@ -132,7 +132,6 @@ class ProcessCollections():
 
     def parse_collections(self, target="../_data/taxon_list.yml", species_collections=None):
         '''Retrieve and output collections for jekyll site'''
-        #print(target)
         logger = self.logger
         yamlStandard = (open('TEST.yaml', 'w'))
         taxonList = yaml.load(open(target, 'r').read(),
@@ -207,12 +206,11 @@ class ProcessCollections():
                                     stop = 0
                                     url = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.genome_main.fna.gz'
                                     fai = f'{url}.fai'
-                                    faiResponse = requests.get(fai)
-                                    if faiResponse.status_code == 200:
-                                        ref = faiResponse.text.split('\n')[0].split()[0]
-                                        stop = faiResponse.text.split('\n')[0].split()[1]
-                                        logger.debug(ref, stop)
-                                    else:
+                                    faiResponse = requests.get(fai)  # get fai file to build loc from
+                                    if faiResponse.status_code == 200:  # if fai exists
+                                        (ref, stop) = faiResponse.text.split('\n')[0].split()[:2]  # fai field 1\s+2
+                                        logger.debug(f'{ref},{stop}')
+                                    else:  # fai file could not be accessed
                                         logger.error(f'No fai file for: {url}... Exiting...')
                                         sys.exit(1)
                                     linear_session = {
@@ -261,9 +259,7 @@ class ProcessCollections():
                                                                                       'infraspecies': parts[1], 'taxid': 0}
                                     else:
                                         logger.debug(f'proteinUrl(Protein):Failed {protein_response}')
-#####
                                 if(collectionType == 'synteny'):
-#                                   checksum reader
                                     checksumUrl = f'{self.datastore_url}{collectionDir}CHECKSUM.{parts[1]}.md5'
                                     checkResponse = requests.get(checksumUrl)
                                     if checkResponse.status_code==200:
