@@ -203,11 +203,22 @@ class ProcessCollections():
                                 parts = self.get_attributes(parts)
                                 lookup = f"{parts[0]}.{'.'.join(name.split('.')[:-1])}"  # reference name in datastructure
                                 if(collectionType == 'genomes'):  # add parent genomes
+                                    ref = ''
+                                    stop = 0
                                     url = f'{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.genome_main.fna.gz'
+                                    fai = f'{url}.fai'
+                                    faiResponse = requests.get(fai)
+                                    if faiResponse.status_code == 200:
+                                        ref = faiResponse.text.split('\n')[0].split()[0]
+                                        stop = faiResponse.text.split('\n')[0].split()[1]
+                                        logger.debug(ref, stop)
+                                    else:
+                                        logger.error(f'No fai file for: {url}... Exiting...')
+                                        sys.exit(1)
                                     linear_session = {
                                         "views": [
                                             {"assembly": lookup,
-                                             "loc": "" ,
+                                             "loc": f"{ref}:1-{stop}",
                                              "type": "LinearGenomeView",
 #                                            "tracks": [
 #                                                " gff3tabix_genes " ,
@@ -264,6 +275,15 @@ class ProcessCollections():
                                     else:  #CheckSum FAILURE
                                         logger.debug(f'GET Failed for checksum {checkResponse.status_code} {checksumUrl}')
                                 elif(collectionType == 'genome_alignments'):
+                                    dotplot_view = {  # session object for jbrowse2 dotplot view
+                                        " views ": [
+                                            {
+                                                 " type ": " DotplotView " ,
+                                                 " views ": [{ " assembly ": " volvox " } , { " assembly ": " volvox " }] ,
+                                                               " tracks ": [" volvox_fake_synteny "]
+                                            }
+                                        ]
+                                    }
                                     checksumUrl = f'{self.datastore_url}{collectionDir}CHECKSUM.{parts[1]}.md5'
                                     checkResponse = requests.get(checksumUrl)
                                     logger.debug(checkResponse)
