@@ -24,7 +24,7 @@ def populate_jekyll(taxa_list, collections_out):
 @click.option('--log_file', default="./populate-dscensor.log", help='''Log file to output messages. (default: ./populate-dscensor.log)''')
 @click.option('--log_level', default="INFO", help='''Log Level to output messages. (default: INFO)''')
 def populate_dscensor(taxa_list, nodes_out, log_file, log_level):
-    '''CLI entry for populate-jekyll'''
+    '''CLI entry for populate-dscensor'''
     logger = setup_logging(log_file, log_level, 'populate-dscensor') 
     parser = ProcessCollections(logger)  # initialize class
     logger.info("Processing Collections...")
@@ -53,7 +53,7 @@ def populate_jbrowse2(jbrowse_url, taxa_list, jbrowse_out, cmds_only, log_file, 
 
 @click.command()
 @click.option('--taxa_list', default="../_data/taxon_list.yml", help='''Taxa.yml file. (Default: ../_data/taxon_list.yml)''')
-@click.option('--blast_out', default="/var/www/html/db/Genomic_Sequence_Collection", help='''Output directory for Jbrowse2. (Default: /var/www/html/db/Genomic_Sequence_Collection)''')
+@click.option('--blast_out', default="/var/www/html/db/Genomic_Sequence_Collection", help='''Output directory for BLAST DBs. (Default: /var/www/html/db/Genomic_Sequence_Collection)''')
 @click.option('--cmds_only', is_flag=True, help='''Output commands only. Do not run makeblastdb just output the commands that would be run.''')
 @click.option('--log_file', default="./populate-blast.log", help='''Log file to output messages. (default: ./populate-blast.log)''')
 @click.option('--log_level', default="INFO", help='''Log Level to output messages. (default: INFO)''')

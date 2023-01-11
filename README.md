@@ -19,58 +19,62 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 The pipeline will run with no options if run from the _scripts directory. `python3 ./lis-autocontent/populate-jekyll.py collections`
 
 ```
-(lis-autocontent_env) [legumista@ctc-apollo LIS-autocontent]$ ./lis-autocontent.py --help
 Usage: lis-autocontent.py [OPTIONS] COMMAND [ARGS]...
 
-  CLI entry for populate-jekyll
+  CLI entry for LIS-autocontent
 
 Options:
   --help  Show this message and exit.
 
 Commands:
   populate-blast     CLI entry for populate-blast
-  populate-jbrowse2  CLI entry for deploy-jbrowse2
+  populate-dscensor  CLI entry for populate-jekyll
+  populate-jbrowse2  CLI entry for populate-jbrowse2
   populate-jekyll    CLI entry for populate-jekyll
 ```
 
 ## populate-blast
 
 ```
-(lis-autocontent_env) [legumista@ctc-apollo LIS-autocontent]$ ./lis-autocontent.py populate-blast --help
 Usage: lis-autocontent.py populate-blast [OPTIONS]
 
   CLI entry for populate-blast
 
 Options:
   --taxa_list TEXT  Taxa.yml file. (Default: ../_data/taxon_list.yml)
-  --blast_out TEXT  Output directory for Jbrowse2. (Default:
+  --blast_out TEXT  Output directory for BLAST DBs. (Default:
                     /var/www/html/db/Genomic_Sequence_Collection)
   --cmds_only       Output commands only. Do not run makeblastdb just output
                     the commands that would be run.
+  --log_file TEXT   Log file to output messages. (default: ./populate-
+                    blast.log)
+  --log_level TEXT  Log Level to output messages. (default: INFO)
   --help            Show this message and exit.
 ```
 
 ## populate-jbrowse2
 
 ```
-(lis-autocontent_env) [legumista@ctc-apollo LIS-autocontent]$ ./lis-autocontent.py populate-jbrowse2 --help
 Usage: lis-autocontent.py populate-jbrowse2 [OPTIONS]
 
-  CLI entry for deploy-jbrowse2
+  CLI entry for populate-jbrowse2
 
 Options:
+  --jbrowse_url TEXT  URL hosting JBrowse2
   --taxa_list TEXT    Taxa.yml file. (Default: ../_data/taxon_list.yml)
   --jbrowse_out TEXT  Output directory for Jbrowse2. (Default:
                       /var/www/html/jbrowse2_autodeploy)
   --cmds_only         Output commands only. Do not run Jbrowse2 just output
                       the commands that would be run.
+  --log_file TEXT     Log file to output messages. (default: ./populate-
+                      jbrowse2.log)
+  --log_level TEXT    Log Level to output messages. (default: INFO)
   --help              Show this message and exit.
 ```
 
 ## populate-jekyll
 
 ```
-(lis-autocontent_env) [legumista@ctc-apollo LIS-autocontent]$ ./lis-autocontent.py populate-jekyll --help
 Usage: lis-autocontent.py populate-jekyll [OPTIONS]
 
   CLI entry for populate-jekyll
@@ -81,4 +85,18 @@ Options:
   --help                  Show this message and exit.
 ```
 
-DOCKER COMING
+## populate-dscensor
+
+```
+Usage: lis-autocontent.py populate-dscensor [OPTIONS]
+
+  CLI entry for populate-dscensor
+
+Options:
+  --taxa_list TEXT  Taxa.yml file. (Default: ../_data/taxon_list.yml)
+  --nodes_out TEXT  Output for dscensor nodes.
+  --log_file TEXT   Log file to output messages. (default: ./populate-
+                    dscensor.log)
+  --log_level TEXT  Log Level to output messages. (default: INFO)
+  --help            Show this message and exit.
+```
