@@ -16,7 +16,7 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 
 ## Run
 
-The pipeline will run with no options if run from the _scripts directory. `python3 ./lis-autocontent/populate-jekyll.py collections`
+The pipeline will run with no options if run from the _scripts directory. `python3 ./LIS-autocontent/lis-autocontent.py`
 
 ```
 Usage: lis-autocontent.py [OPTIONS] COMMAND [ARGS]...
