@@ -4,9 +4,10 @@ import os
 import click
 import cli.lis_cli as lis_cli
 
+
 @click.group()
 def cli():
-    '''CLI entry for LIS-autocontent'''
+    """CLI entry for LIS-autocontent"""
     pass
 
 
