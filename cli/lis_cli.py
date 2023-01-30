@@ -33,7 +33,7 @@ def populate_jekyll(taxa_list, collections_out):
 )
 @click.option(
     "--nodes_out",
-    default="/var/www/html/dscensor",
+    default="./autocontent",
     help="""Output for dscensor nodes.""",
 )
 @click.option(
@@ -65,8 +65,8 @@ def populate_dscensor(taxa_list, nodes_out, log_file, log_level):
 )
 @click.option(
     "--jbrowse_out",
-    default="/var/www/html/jbrowse2_autodeploy",
-    help="""Output directory for Jbrowse2. (Default: /var/www/html/jbrowse2_autodeploy)""",
+    default="./autocontent",
+    help="""Output directory for Jbrowse2. (Default: ./autocontent)""",
 )
 @click.option(
     "--cmds_only",
@@ -106,8 +106,8 @@ def populate_jbrowse2(
 )
 @click.option(
     "--blast_out",
-    default="/var/www/html/db/Genomic_Sequence_Collection",
-    help="""Output directory for BLAST DBs. (Default: /var/www/html/db/Genomic_Sequence_Collection)""",
+    default="./autocontent",
+    help="""Output directory for BLAST DBs. (Default: ./autocontent)""",
 )
 @click.option(
     "--cmds_only",
