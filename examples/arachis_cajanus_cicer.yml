@@ -1,0 +1,10 @@
+--- 
+- description: "Peanut"
+  genus: Arachis
+  category: main
+- description: "Pigeonpea"
+  genus: Cajanus
+  category: main
+- description: "Chickpea"
+  genus: Cicer
+  category: main

@@ -19,10 +19,13 @@ class ProcessCollections:
         self.logger = logger
         if self.logger:
             self.logger.info("logger initialized")
+        else:  # logger object required
+            print(f"logger required to initialize ProcessCollections")
+            sys.exit(1)
         self.collections = []  # stores all collections from self.parse_attributes
         self.datastore_url = datastore_url  # URL to search for collections
         self.jbrowse_url = jbrowse_url  # URL to append jbrowse2 sessions
-        self.out_dir = "./autocontent"  # output directory for objects.
+        self.out_dir = "./autocontent"  # output directory for objects.  This is set by the runtimes if provided
         self.files = (
             {}
         )  # stores all files by collection type. This is used to populate output after scanning
@@ -76,8 +79,8 @@ class ProcessCollections:
         """General method to create a jbrowse-components config or populate a blast db using mode"""
         logger = self.logger
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
-        for collectionType in self.collection_types:
-            for file in self.files[collectionType]:
+        for collectionType in self.collection_types:  # for all collections
+            for file in self.files[collectionType]:  # for all files in all collections
                 cmd = ""
                 url = self.files[collectionType][file]["url"]
                 if not url:  # do not take objects with no defined link
@@ -119,14 +122,11 @@ class ProcessCollections:
                             continue
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
-                # Quick Note: Change senteny and diversity cmd jbrowse lines later. They are like this for now just to see if it will even work.
                 if collectionType == "genome_alignments":  # add pair-wise paf files
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-track --assemblyNames {','.join(parent)} --out {self.out_dir}/ {url} --force"
                     elif mode == "blast":  # for blast
-                        continue  # synteny is not blastable at the moment
-                #                        cmd = f'set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc'  # retrieve genome and decompress
-                #                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
+                        continue  # Not blastable at the moment
                 # MORE CANONICAL TYPES HERE
                 if not cmd:  # continue for null objects
                     continue
@@ -135,7 +135,7 @@ class ProcessCollections:
                 elif subprocess.check_call(
                     cmd, shell=True, executable="/bin/bash"
                 ):  # execute cmd and check exit value = 0
-                    logger.error(f"Non zero exit value: {cmd}")
+                    logger.error(f"Non-zero exit value: {cmd}")
 
     def populate_jbrowse2(self, out_dir, cmds_only=False):
         """Populate jbrowse2 config object from collected objects"""
@@ -170,7 +170,7 @@ class ProcessCollections:
 
     def parse_collections(
         self, target="../_data/taxon_list.yml", species_collections=None
-    ):
+    ):  # refactored from SammyJava
         """Retrieve and output collections for jekyll site"""
         logger = self.logger
         taxonList = yaml.load(
@@ -181,7 +181,7 @@ class ProcessCollections:
                 logger.error(f"Genus not found for: {taxon}")
                 sys.exit(1)
             genus = taxon["genus"]
-            genusDescriptionUrl = f"{self.datastore_url}/{genus}/GENUS/about_this_collection/description_{genus}.yml"
+            genusDescriptionUrl = f"{self.datastore_url}/{genus}/GENUS/about_this_collection/description_{genus}.yml"  # genus desciprion to be read
             genusDescriptionResponse = requests.get(genusDescriptionUrl)
             speciesCollectionsFile = None  # yaml file to write for species collections
             genusResourcesFile = None  # yaml file to write for genus resources
@@ -219,26 +219,18 @@ class ProcessCollections:
                 for species in genusDescription[
                     "species"
                 ]:  # iterate through all species in the genus
-                    infraspecies_resources = {}
                     logger.info(
                         f"Searching {self.datastore_url} for: {taxon['genus']} {species}"
                     )
+                    speciesUrl = f"{self.datastore_url}/{genus}/{species}"
+                    infraspecies_resources = {}
                     if speciesCollectionsFilename:
                         print(f"- name: {species}", file=speciesCollectionsFile)
-                    speciesUrl = f"{self.datastore_url}/{genus}/{species}"
-                    speciesDescriptionUrl = f"{speciesUrl}/about_this_collection/description_{genus}_{species}.yml"
-                    logger.debug(speciesDescriptionUrl)  # get species description url
-                    speciesDescriptionResponse = requests.get(speciesDescriptionUrl)
-                    #                    if speciesDescriptionResponse.status_code == 200:
-                    #                        speciesDescription = yaml.load(speciesDescriptionResponse.text, Loader=yaml.FullLoader)  # load the yaml from the datastore for species
-                    #                        speciesDescription['resources'].append()
-                    #                        speciesDescriptions.append(speciesDescription)
-                    #                        print(speciesDescription['resources'])
                     for (
                         collectionType
                     ) in (
                         self.collection_types
-                    ):  # iterate through collections found in the datastore with readme files
+                    ):  # iterate through collections found in the datastore
                         if collectionType not in self.files:  # add new type
                             self.files[collectionType] = {}
                         if speciesCollectionsFilename:
@@ -260,6 +252,7 @@ class ProcessCollections:
                                 parent = ""
                                 parts = self.get_attributes(parts)
                                 lookup = f"{parts[0]}.{'.'.join(name.split('.')[:-1])}"  # reference name in datastructure
+                                ###
                                 if (
                                     collectionType == "genomes"
                                 ):  # add parent genome_main files
@@ -327,7 +320,7 @@ class ProcessCollections:
                                         "infraspecies": parts[1],
                                         "taxid": 0,
                                     }  # add type and url
-
+                                ###
                                 elif (
                                     collectionType == "annotations"
                                 ):  # add gff3 annotation files. genome_main parent
@@ -337,7 +330,9 @@ class ProcessCollections:
                                     self.files["genomes"][genome_lookup]["url"]
                                     parent = genome_lookup
                                     url = f"{self.datastore_url}{collectionDir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz"
-                                    self.files[collectionType][lookup] = {
+                                    self.files[collectionType][
+                                        lookup
+                                    ] = {  # gene_models_main
                                         "url": url,
                                         "name": lookup,
                                         "parent": parent,
@@ -352,7 +347,7 @@ class ProcessCollections:
                                         protprimary_lookup = f"{lookup}.protein_primary"
                                         self.files[collectionType][
                                             protprimary_lookup
-                                        ] = {
+                                        ] = {  # protein_primary
                                             "url": protprimaryUrl,
                                             "name": protprimary_lookup,
                                             "parent": parent,
@@ -370,7 +365,9 @@ class ProcessCollections:
                                     protein_response = requests.get(proteinUrl)
                                     if protein_response.status_code == 200:
                                         protein_lookup = f"{lookup}.protein"
-                                        self.files[collectionType][protein_lookup] = {
+                                        self.files[collectionType][
+                                            protein_lookup
+                                        ] = {  # all proteins
                                             "url": proteinUrl,
                                             "name": protein_lookup,
                                             "parent": parent,
@@ -383,6 +380,7 @@ class ProcessCollections:
                                         logger.debug(
                                             f"proteinUrl(Protein):Failed {protein_response}"
                                         )
+                                ###
                                 elif collectionType == "synteny":  # DEPRICATED?
                                     checksumUrl = f"{self.datastore_url}{collectionDir}CHECKSUM.{parts[1]}.md5"
                                     checkResponse = requests.get(checksumUrl)
@@ -392,6 +390,7 @@ class ProcessCollections:
                                         logger.debug(
                                             f"GET Failed for checksum {checkResponse.status_code} {checksumUrl}"
                                         )
+                                ###
                                 elif (
                                     collectionType == "genome_alignments"
                                 ):  # Synteny after the new changes. Parent is a tuple with both genome_main files
@@ -450,9 +449,12 @@ class ProcessCollections:
                                                             paf_lookup
                                                         ]
                                                     )
-                                readmeUrl = f"{self.datastore_url}/{collectionDir}README.{name}.yml"  # species collection file
+                                ###
+                                readmeUrl = f"{self.datastore_url}/{collectionDir}README.{name}.yml"  # species collection readme
                                 readmeResponse = requests.get(readmeUrl)
-                                if readmeResponse.status_code == 200:
+                                if (
+                                    readmeResponse.status_code == 200
+                                ):  # readme get success
                                     readme = yaml.load(
                                         readmeResponse.text, Loader=yaml.FullLoader
                                     )
@@ -475,7 +477,7 @@ class ProcessCollections:
                                             f'      synopsis: "{synopsis}"',
                                             file=speciesCollectionsFile,
                                         )
-                                else:  # README FAILURE
+                                else:  # get failed for
                                     logger.debug(
                                         f"GET Failed for README {readmeResponse.status_code} {readmeUrl}"
                                     )  # change to log
@@ -486,16 +488,19 @@ class ProcessCollections:
                             )  # change to log
                     #                            sys.exit(1)
                     #                    logger.info(f'{}')
+                    speciesDescriptionUrl = f"{speciesUrl}/about_this_collection/description_{genus}_{species}.yml"  # parse for strain resources
+                    logger.debug(speciesDescriptionUrl)  # get species description url
+                    speciesDescriptionResponse = requests.get(speciesDescriptionUrl)
                     if (
                         speciesDescriptionResponse.status_code == 200
-                    ):  # add the remainder of the species resources and info and add jbrowse
+                    ):  # Read species description yml and add jbrowse resources to "strains"
                         speciesDescription = yaml.load(
                             speciesDescriptionResponse.text, Loader=yaml.FullLoader
                         )  # load the yaml from the datastore for species
                         count = 0
                         for strain in speciesDescription[
                             "strains"
-                        ]:  # iterate through all infraspecies in this species
+                        ]:  # iterate through all strains in this species description
                             if (
                                 strain["identifier"] in infraspecies_resources
                             ):  # add to this strain
@@ -519,16 +524,15 @@ class ProcessCollections:
                 yaml.dump(
                     speciesDescriptions, speciesResourcesFile
                 )  # dump species_resources.yml locally with jbrowse links
-            else:  # Genus Description file could not be found.
+            else:  # get failed on genus description yml file
                 logger.warning(
                     f"GET Failed for genus {genusDescriptionResponse.status_code} {genusDescriptionUrl}"
                 )
-            #                sys.exit(1)
-            if speciesCollectionsFile:
+            if speciesCollectionsFile:  # close species collections
                 speciesCollectionsFile.close()
-            if genusResourcesFile:
+            if genusResourcesFile:  # close genus resources
                 genusResourcesFile.close()
-            if speciesResourcesFile:
+            if speciesResourcesFile:  # close species resources
                 speciesResourcesFile.close()
 
 
