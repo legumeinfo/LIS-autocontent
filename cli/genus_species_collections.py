@@ -80,16 +80,17 @@ class ProcessCollections:
         logger = self.logger
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
         for collectionType in self.collection_types:  # for all collections
-            for file in self.files[collectionType]:  # for all files in all collections
+            for dsfile in self.files[collectionType]:  # for all files in all collections
                 cmd = ""
-                url = self.files[collectionType][file]["url"]
+                url = self.files[collectionType][dsfile]["url"]
                 if not url:  # do not take objects with no defined link
                     continue
-                name = self.files[collectionType][file]["name"]
-                genus = self.files[collectionType][file]["genus"]
-                parent = self.files[collectionType][file]["parent"]
-                species = self.files[collectionType][file]["species"]
-                infraspecies = self.files[collectionType][file]["infraspecies"]
+                name = self.files[collectionType][dsfile]["name"]
+                genus = self.files[collectionType][dsfile]["genus"]
+                taxid = self.files[collectionType][dsfile].get("taxid", 0)
+                parent = self.files[collectionType][dsfile]["parent"]
+                species = self.files[collectionType][dsfile]["species"]
+                infraspecies = self.files[collectionType][dsfile]["infraspecies"]
                 filetype = url.split(".")[
                     -3
                 ]  # get file type from datastore file name filetype.X.gz
@@ -106,6 +107,7 @@ class ProcessCollections:
                         "derived_from": parent,
                     }
                 )  # object for DSCensor node
+                ### possibly break out next section into methods: blast, jbrowse, then types
                 if collectionType == "genomes":  # add genome
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-assembly -a {name} --out {self.out_dir}/ -t bgzipFasta --force"
@@ -113,6 +115,8 @@ class ProcessCollections:
                     elif mode == "blast":  # for blast
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
+                        if taxid:
+                            cmd += f' -taxid {taxid}'
                 if collectionType == "annotations":  # add annotation
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-track -a {parent} --out {self.out_dir}/ --force"
@@ -122,13 +126,15 @@ class ProcessCollections:
                             continue
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} {collectionType.capitalize()}"'
+                        if taxid:
+                            cmd += f' -taxid {taxid}'
                 if collectionType == "genome_alignments":  # add pair-wise paf files
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-track --assemblyNames {','.join(parent)} --out {self.out_dir}/ {url} --force"
                     elif mode == "blast":  # for blast
                         continue  # Not blastable at the moment
                 # MORE CANONICAL TYPES HERE
-                if not cmd:  # continue for null objects
+                if not cmd:  # continue for null or incomplete objects
                     continue
                 if cmds_only:  # output only cmds
                     print(cmd)
