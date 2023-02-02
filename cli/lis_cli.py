@@ -16,9 +16,19 @@ from .genus_species_collections import ProcessCollections
 @click.option(
     "--collections_out", default="../_data/taxa/", help="""Output for collections."""
 )
-def populate_jekyll(taxa_list, collections_out):
+@click.option(
+    "--log_file",
+    default="./populate-jekyll.log",
+    help="""Log file to output messages. (default: ./populate-jekyll.log)""",
+)
+@click.option(
+    "--log_level",
+    default="INFO",
+    help="""Log Level to output messages. (default: INFO)""",
+)
+def populate_jekyll(taxa_list, collections_out, log_file, log_level):
     """CLI entry for populate-jekyll"""
-    logger = setup_logging("./testme.log", "", "populate-jekyll")
+    logger = setup_logging(log_file, log_level, "populate-jekyll")
     logger.info("Processing Collections...")
     parser = ProcessCollections(logger)  # initialize class
     logger.info("Outputting Collections...")
