@@ -14,7 +14,11 @@ class ProcessCollections:
     """Parses Collections from the datastore_url provided. Default: https://data.legumeinfo.org"""
 
     def __init__(
-        self, logger=None, datastore_url="https://data.legumeinfo.org", jbrowse_url="", out_dir="./autocontent"
+        self,
+        logger=None,
+        datastore_url="https://data.legumeinfo.org",
+        jbrowse_url="",
+        out_dir="./autocontent",
     ):
         self.logger = logger
         if self.logger:
@@ -44,9 +48,13 @@ class ProcessCollections:
         )  # types to search the datastore_url for
         #        self.relationships = {'genomes': {'annotations': ...}, 'annotations': {}}  # establish related objects once this is relevant
         self.current_taxon = {}
-        self.species_descriptions = []  # list of all species descriptions to be written to species collections
+        self.species_descriptions = (
+            []
+        )  # list of all species descriptions to be written to species collections
         self.infraspecies_resources = {}  # used to track all "strains"
-        self.species_collections_handle = None  # yaml file to write for species collections
+        self.species_collections_handle = (
+            None  # yaml file to write for species collections
+        )
         self.genus_resources_handle = None  # yaml file to write for genus resources
         self.species_resources_handle = None  # yaml file to write for species resources
 
@@ -54,11 +62,9 @@ class ProcessCollections:
         """Uses requests.get to grab remote URL returns response object otherwise returns False"""
         logger = self.logger
         response = requests.get(url)  # get remote object
-        if (
-            response.status_code == 200
-        ):  # SUCCESS
+        if response.status_code == 200:  # SUCCESS
             return response
-        logger.debug(f'GET failed with status {response.status_code} for: {url}')
+        logger.debug(f"GET failed with status {response.status_code} for: {url}")
         return False
 
     def parse_attributes(self, response_text):  # inherited from Sammyjava
@@ -97,7 +103,9 @@ class ProcessCollections:
         logger = self.logger
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
         for collection_type in self.collection_types:  # for all collections
-            for dsfile in self.files[collection_type]:  # for all files in all collections
+            for dsfile in self.files[
+                collection_type
+            ]:  # for all files in all collections
                 cmd = ""
                 url = self.files[collection_type][dsfile]["url"]
                 if not url:  # do not take objects with no defined link
@@ -133,20 +141,24 @@ class ProcessCollections:
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}"'
                         if taxid:
-                            cmd += f' -taxid {taxid}'
+                            cmd += f" -taxid {taxid}"
                 if collection_type == "annotations":  # add annotation
                     if mode == "jbrowse":  # for jbrowse
-                        if url.endswith("faa.gz"):  # only process non faa annotations in jbrowse
+                        if url.endswith(
+                            "faa.gz"
+                        ):  # only process non faa annotations in jbrowse
                             continue
                         cmd = f"jbrowse add-track -a {parent} --out {self.out_dir}/ --force"
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
-                        if not url.endswith("faa.gz"):  # only process faa annotations in blast
+                        if not url.endswith(
+                            "faa.gz"
+                        ):  # only process faa annotations in blast
                             continue
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}"'
                         if taxid:
-                            cmd += f' -taxid {taxid}'
+                            cmd += f" -taxid {taxid}"
                 if collection_type == "genome_alignments":  # add pair-wise paf files
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-track --assemblyNames {','.join(parent)} --out {self.out_dir}/ {url} --force"
@@ -199,13 +211,15 @@ class ProcessCollections:
         species_url = f"{self.datastore_url}/{genus}/{species}"
         if collection_type not in self.files:  # add new type
             self.files[collection_type] = {}
-        print(f"  {collection_type}:", file=self.species_collections_handle)  # print collection type in species collections
+        print(
+            f"  {collection_type}:", file=self.species_collections_handle
+        )  # print collection type in species collections
         collections_url = f"{species_url}/{collection_type}/"
         collections_response = self.get_remote(collections_url)
         if not collections_response:  # get remote failed
             logger.debug(collections_response)
             return False
-        self.collections = []  # Set to empty list for use in self.parse_attributes 
+        self.collections = []  # Set to empty list for use in self.parse_attributes
         self.parse_attributes(
             collections_response.text
         )  # Feed response from GET to populate collections
@@ -217,9 +231,7 @@ class ProcessCollections:
             parent = ""
             parts = self.get_attributes(parts)
             lookup = f"{parts[0]}.{'.'.join(name.split('.')[:-1])}"  # reference name in datastructure
-            if (
-                collection_type == "genomes"
-            ):  # add parent genome_main files
+            if collection_type == "genomes":  # add parent genome_main files
                 ref = ""
                 stop = 0
                 url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.genome_main.fna.gz"  # genome_main in datastore_url
@@ -227,12 +239,8 @@ class ProcessCollections:
                 fai_response = self.get_remote(
                     fai_url
                 )  # get fai file to build loc from
-                if (
-                    fai_response
-                ):  # fai SUCCESS 200
-                    (ref, stop) = fai_response.text.split("\n")[
-                        0
-                    ].split()[
+                if fai_response:  # fai SUCCESS 200
+                    (ref, stop) = fai_response.text.split("\n")[0].split()[
                         :2
                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                     logger.debug(f"{ref},{stop}")
@@ -254,9 +262,7 @@ class ProcessCollections:
                         }
                     ]
                 }
-                strain_lookup = lookup.split(".")[
-                    1
-                ]  # the strain for the lookup
+                strain_lookup = lookup.split(".")[1]  # the strain for the lookup
                 linear_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}"  # build the URL for the resource
                 linear_data = {
                     "name": f"JBrowse2 {lookup}",
@@ -268,13 +274,9 @@ class ProcessCollections:
                 if strain_lookup not in self.infraspecies_resources:
                     self.infraspecies_resources[
                         strain_lookup
-                    ] = (
-                        []
-                    )  # initialize infraspecies list within species
+                    ] = []  # initialize infraspecies list within species
                 if self.jbrowse_url:  # dont add data if no jbrowse url set
-                    self.infraspecies_resources[strain_lookup].append(
-                        linear_data
-                    )
+                    self.infraspecies_resources[strain_lookup].append(linear_data)
                 logger.debug(url)
                 self.files[collection_type][lookup] = {
                     "url": url,
@@ -289,15 +291,11 @@ class ProcessCollections:
             elif (
                 collection_type == "annotations"
             ):  # add gff3 annotation files and protein/protein_primary. genome_main parent
-                genome_lookup = ".".join(
-                    lookup.split(".")[:-1]
-                )  # genome parent prefix
+                genome_lookup = ".".join(lookup.split(".")[:-1])  # genome parent prefix
                 self.files["genomes"][genome_lookup]["url"]
                 parent = genome_lookup
                 url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz"
-                self.files[collection_type][
-                    lookup
-                ] = {  # gene_models_main
+                self.files[collection_type][lookup] = {  # gene_models_main
                     "url": url,
                     "name": lookup,
                     "parent": parent,
@@ -330,9 +328,7 @@ class ProcessCollections:
                 protein_response = self.get_remote(protein_url)
                 if protein_response:
                     protein_lookup = f"{lookup}.protein"
-                    self.files[collection_type][
-                        protein_lookup
-                    ] = {  # all proteins
+                    self.files[collection_type][protein_lookup] = {  # all proteins
                         "url": protein_url,
                         "name": protein_lookup,
                         "parent": parent,
@@ -342,19 +338,17 @@ class ProcessCollections:
                         "taxid": 0,
                     }
                 else:
-                    logger.debug(
-                        f"protein failed:{protein_url}, {protein_response}"
-                    )
+                    logger.debug(f"protein failed:{protein_url}, {protein_response}")
             ###
-#            elif collection_type == "synteny":  # DEPRICATED?
-#                checksum_url = f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
-#                checksum_response = requests.get(checksum_url)
-#                if checksum_response.status_code == 200:
-#                    continue
-#                else:  # CheckSum FAILURE
-#                    logger.debug(
-#                        f"GET Failed for checksum {checksum_response.status_code} {checksum_url}"
-#                    )
+            #            elif collection_type == "synteny":  # DEPRICATED?
+            #                checksum_url = f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
+            #                checksum_response = requests.get(checksum_url)
+            #                if checksum_response.status_code == 200:
+            #                    continue
+            #                else:  # CheckSum FAILURE
+            #                    logger.debug(
+            #                        f"GET Failed for checksum {checksum_response.status_code} {checksum_url}"
+            #                    )
             ###
             elif (
                 collection_type == "genome_alignments"
@@ -371,18 +365,16 @@ class ProcessCollections:
                         }
                     ]
                 }
-                checksum_url = f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
+                checksum_url = (
+                    f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
+                )
                 checksum_response = self.get_remote(checksum_url)
-                if (
-                    checksum_response
-                ):  # checksum SUCCESS 200
+                if checksum_response:  # checksum SUCCESS 200
                     for line in checksum_response.text.split("\n"):
                         logger.debug(line)
                         fields = line.split()
                         if fields:  # process if fields exists
-                            if fields[1].endswith(
-                                "paf.gz"
-                            ):  # get paf file
+                            if fields[1].endswith("paf.gz"):  # get paf file
                                 paf_lookup = fields[1].replace(
                                     "./", ""
                                 )  # get paf file to load will start with ./
@@ -397,9 +389,7 @@ class ProcessCollections:
                                 parent2 = ".".join(
                                     paf_parts[5:8]
                                 )  # parent 2 in pair-wise alignment
-                                self.files[collection_type][
-                                    paf_lookup
-                                ] = {
+                                self.files[collection_type][paf_lookup] = {
                                     "url": paf_url,
                                     "name": paf_lookup,
                                     "parent": [parent1, parent2],
@@ -408,19 +398,11 @@ class ProcessCollections:
                                     "infraspecies": parts[1],
                                     "taxid": 0,
                                 }
-                                logger.debug(
-                                    self.files[collection_type][
-                                        paf_lookup
-                                    ]
-                                )
+                                logger.debug(self.files[collection_type][paf_lookup])
             readme_url = f"{self.datastore_url}/{collection_dir}README.{name}.yml"  # species collection readme
             readme_response = self.get_remote(readme_url)
-            if (
-                readme_response
-            ):  # readme get success
-                readme = yaml.load(
-                    readme_response.text, Loader=yaml.FullLoader
-                )
+            if readme_response:  # readme get success
+                readme = yaml.load(readme_response.text, Loader=yaml.FullLoader)
                 synopsis = readme["synopsis"]
                 taxid = readme["taxid"]
                 if lookup in self.files[collection_type]:
@@ -428,9 +410,7 @@ class ProcessCollections:
                         "taxid"
                     ] = taxid  # set taxid if available for this file object
                 else:
-                    logger.debug(
-                        f"{lookup} not in {self.files[collection_type]}"
-                    )
+                    logger.debug(f"{lookup} not in {self.files[collection_type]}")
                 print(
                     f"    - collection: {name}",
                     file=self.species_collections_handle,
@@ -440,17 +420,12 @@ class ProcessCollections:
                     file=self.species_collections_handle,
                 )
             else:  # get failed for
-                logger.debug(
-                    f"GET Failed for README {readme_url}"
-                )
-
+                logger.debug(f"GET Failed for README {readme_url}")
 
     def process_species(self, genus, species):
         """Process species and genus from genus_description object"""
         logger = self.logger
-        logger.info(
-            f"Searching {self.datastore_url} for: {genus} {species}"
-        )
+        logger.info(f"Searching {self.datastore_url} for: {genus} {species}")
         species_url = f"{self.datastore_url}/{genus}/{species}"
         self.infraspecies_resources = {}
         print(f"- name: {species}", file=self.species_collections_handle)
@@ -484,9 +459,9 @@ class ProcessCollections:
                         for resource in self.infraspecies_resources[
                             strain["identifier"]
                         ]:  # append all the resources to the existing
-                            species_description["strains"][count][
-                                "resources"
-                            ].append(resource)
+                            species_description["strains"][count]["resources"].append(
+                                resource
+                            )
                     else:
                         species_description["strains"][count][
                             "resources"
@@ -507,35 +482,43 @@ class ProcessCollections:
         genus_description_response = self.get_remote(genus_description_url)
         self.genus_resources_handle = None  # yaml file to write for genus resources
         self.species_resources_handle = None  # yaml file to write for species resources
-        self.species_collections_handle = None  # yaml file to write for species collections
+        self.species_collections_handle = (
+            None  # yaml file to write for species collections
+        )
         if genus_description_response:  # Genus Description yml 200 SUCCESS
             species_collections_filename = None
             self.species_descriptions = []  # null for current taxon genus
             genus_description = yaml.load(
                 genus_description_response.text, Loader=yaml.FullLoader
             )  # load yml into python object
-            collection_dir = (
-                f'{os.path.abspath(self.out_dir)}/{genus}'
-            )
-            pathlib.Path(collection_dir).mkdir(parents=True, exist_ok=True)  # make output dirs if they dont exist
+            collection_dir = f"{os.path.abspath(self.out_dir)}/{genus}"
+            pathlib.Path(collection_dir).mkdir(
+                parents=True, exist_ok=True
+            )  # make output dirs if they dont exist
             genus_resources_filename = f"{collection_dir}/genus_resources.yml"  # local file to write genus resources
             species_resources_filename = f"{collection_dir}/species_resources.yml"  # local file to write species resources
-            species_collections_filename = (
-                f"{collection_dir}/species_collections.yml"
-            )  # local file to write collections
+            species_collections_filename = f"{collection_dir}/species_collections.yml"  # local file to write collections
             self.species_collections_handle = open(species_collections_filename, "w")
             self.genus_resources_handle = open(genus_resources_filename, "w")
             self.species_resources_handle = open(species_resources_filename, "w")
             collection_string = "---\nspecies:"
             print("---", file=self.genus_resources_handle)  # write genus resources
-            yaml.dump(genus_description, self.genus_resources_handle)  # dump full description of genus
-            print(collection_string, file=self.species_collections_handle)  # write species collection
-            print(collection_string, file=self.species_resources_handle)  # write species resources
+            yaml.dump(
+                genus_description, self.genus_resources_handle
+            )  # dump full description of genus
+            print(
+                collection_string, file=self.species_collections_handle
+            )  # write species collection
+            print(
+                collection_string, file=self.species_resources_handle
+            )  # write species resources
 
             for species in genus_description[
                 "species"
             ]:  # iterate through all species in the genus
-                self.process_species(genus, species)  # process species and genus to populate self.species_descriptions
+                self.process_species(
+                    genus, species
+                )  # process species and genus to populate self.species_descriptions
 
             yaml.dump(
                 self.species_descriptions, self.species_resources_handle
