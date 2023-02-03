@@ -10,14 +10,16 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 ## Install
 
 1. Clone repository. `git clone https://github.com/legumeinfo/LIS-autocontent.git`
-2. Create a virtual environment for python3 `/path/to/python3/bin/virtualenv autocontent_env`
-3. Source virtual environment `. ./autocontent_env/bin/activate`
-4. Install requirements. `pip install -r ./LIS-autocontent/requirements.txt`
+2. Create a virtual environment for python3 `/path/to/python3/bin/virtualenv autocontent_env`  (optional)
+3. Source virtual environment `. ./autocontent_env/bin/activate`  (optional)
+4. Install requirements. `cd ./LIS-autocontent;pip install -r ./requirements.txt`  (optional)
+5a. Install package locally in ./build. `python setup.py build`
+5b. Install package into env and add to PATH. `python setup.py install`
 
 ## Run
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ./lis-autocontent.py
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py
 Usage: lis-autocontent.py [OPTIONS] COMMAND [ARGS]...
 
   CLI entry for LIS-autocontent
@@ -35,7 +37,7 @@ Commands:
 ## populate-blast
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ./lis-autocontent.py populate-blast --help
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-blast --help
 Usage: lis-autocontent.py populate-blast [OPTIONS]
 
   CLI entry for populate-blast
@@ -54,7 +56,7 @@ Options:
 ## populate-jbrowse2
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ./lis-autocontent.py populate-jbrowse2 --help
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-jbrowse2 --help
 Usage: lis-autocontent.py populate-jbrowse2 [OPTIONS]
 
   CLI entry for populate-jbrowse2
@@ -74,7 +76,7 @@ Options:
 ## populate-jekyll
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ./lis-autocontent.py populate-jekyll --help
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-jekyll --help
 Usage: lis-autocontent.py populate-jekyll [OPTIONS]
 
   CLI entry for populate-jekyll
@@ -88,7 +90,7 @@ Options:
 ## populate-dscensor
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ./lis-autocontent.py populate-dscensor --help
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-dscensor --help
 Usage: lis-autocontent.py populate-dscensor [OPTIONS]
 
   CLI entry for populate-dscensor
