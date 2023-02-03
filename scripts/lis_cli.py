@@ -4,7 +4,7 @@ import os
 import sys
 import click
 import logging
-from .ProcessCollections import ProcessCollections
+from ProcessCollections import ProcessCollections
 
 
 def setup_logging(log_file, log_level, process):

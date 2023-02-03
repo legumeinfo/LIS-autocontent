@@ -14,6 +14,7 @@ setup(
         'urllib3==1.26.9',
     ],
     scripts=[
+        'scripts/lis-autocontent.py',
         'scripts/ProcessCollections.py',
         'scripts/lis_cli.py',
     ],
