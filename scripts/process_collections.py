@@ -95,7 +95,7 @@ class ProcessCollections:
 
     def get_attributes(self, parts):
         """parse parts return url components"""
-        gensp = f"{parts[1].lower()[:3]}{parts[2][:2]}"  # make gensp
+        gensp = f"{parts[1][:3].lower()}{parts[2][:2].lower()}"  # make gensp
         strain = parts[-2]  # get strain and key information
         return (gensp, strain)
 
