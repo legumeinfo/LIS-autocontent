@@ -11,7 +11,7 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 
 1. Create a virtual environment for python3. `python3 -m venv lis_autocontent_env` (optional)
 2. Source environment. `. ./lis_autocontent_env/bin/activate` (optional)
-3. pip install from github. `pip install lis-autocontent`
+3. pip install from pypi. `pip install lis-autocontent`
 
 ## Developer Install
 
