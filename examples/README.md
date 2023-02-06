@@ -1,5 +1,9 @@
 # Examples
 
+Below are examples that use the various cli entry points to populate backend objects for a genus centric LIS site.
+
+If you want to bactch the commands for JBrowse2 and BLAST DB creation you can add the "--cmds_only" flag and capture STDOUT.
+
 ## Build Collections and Resources
 
 ```
