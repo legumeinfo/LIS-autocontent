@@ -7,11 +7,11 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 2. NCBI-BLAST+ (https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
 3. Python3.7+
 
-## Quick Install With pip (register as python package soon.)
+## Quick Install With pip
 
 1. Create a virtual environment for python3. `python3 -m venv lis_autocontent_env` (optional)
 2. Source environment. `. ./lis_autocontent_env/bin/activate` (optional)
-3. pip install from github. `pip install 'lis_autocontent @ git+https://github.com/legumeinfo/LIS-autocontent.git'`
+3. pip install from github. `pip install lis-autocontent`
 
 ## Developer Install
 
