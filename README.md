@@ -5,20 +5,21 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 
 1. JBrowse2 (https://jbrowse.org/jb2/docs/combined/)
 2. NCBI-BLAST+ (https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/)
-3. Python3
+3. Python3.7+
 
 ## Install
 
 1. Clone repository. `git clone https://github.com/legumeinfo/LIS-autocontent.git`
-2. Create a virtual environment for python3 `/path/to/python3/bin/virtualenv autocontent_env`
-3. Source virtual environment `. ./autocontent_env/bin/activate`
-4. Install requirements. `pip install -r ./LIS-autocontent/requirements.txt`
+2. Create a virtual environment for python3 `/path/to/python3/bin/virtualenv autocontent_env`  (optional)
+3. Source virtual environment `. ./autocontent_env/bin/activate`  (optional)
+4. Install requirements. `cd ./LIS-autocontent;pip install -r ./requirements.txt`  (optional)
+5a. Install package locally in ./build. `python setup.py build`
+5b. Install package into env and add to PATH. `python setup.py install`
 
 ## Run
 
-The pipeline will run with no options if run from the _scripts directory. `python3 ./LIS-autocontent/lis-autocontent.py`
-
 ```
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py
 Usage: lis-autocontent.py [OPTIONS] COMMAND [ARGS]...
 
   CLI entry for LIS-autocontent
@@ -28,7 +29,7 @@ Options:
 
 Commands:
   populate-blast     CLI entry for populate-blast
-  populate-dscensor  CLI entry for populate-jekyll
+  populate-dscensor  CLI entry for populate-dscensor
   populate-jbrowse2  CLI entry for populate-jbrowse2
   populate-jekyll    CLI entry for populate-jekyll
 ```
@@ -36,14 +37,14 @@ Commands:
 ## populate-blast
 
 ```
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-blast --help
 Usage: lis-autocontent.py populate-blast [OPTIONS]
 
   CLI entry for populate-blast
 
 Options:
   --taxa_list TEXT  Taxa.yml file. (Default: ../_data/taxon_list.yml)
-  --blast_out TEXT  Output directory for BLAST DBs. (Default:
-                    /var/www/html/db/Genomic_Sequence_Collection)
+  --blast_out TEXT  Output directory for BLAST DBs. (Default: ./autocontent)
   --cmds_only       Output commands only. Do not run makeblastdb just output
                     the commands that would be run.
   --log_file TEXT   Log file to output messages. (default: ./populate-
@@ -55,6 +56,7 @@ Options:
 ## populate-jbrowse2
 
 ```
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-jbrowse2 --help
 Usage: lis-autocontent.py populate-jbrowse2 [OPTIONS]
 
   CLI entry for populate-jbrowse2
@@ -62,8 +64,7 @@ Usage: lis-autocontent.py populate-jbrowse2 [OPTIONS]
 Options:
   --jbrowse_url TEXT  URL hosting JBrowse2
   --taxa_list TEXT    Taxa.yml file. (Default: ../_data/taxon_list.yml)
-  --jbrowse_out TEXT  Output directory for Jbrowse2. (Default:
-                      /var/www/html/jbrowse2_autodeploy)
+  --jbrowse_out TEXT  Output directory for Jbrowse2. (Default: ./autocontent)
   --cmds_only         Output commands only. Do not run Jbrowse2 just output
                       the commands that would be run.
   --log_file TEXT     Log file to output messages. (default: ./populate-
@@ -75,6 +76,7 @@ Options:
 ## populate-jekyll
 
 ```
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-jekyll --help
 Usage: lis-autocontent.py populate-jekyll [OPTIONS]
 
   CLI entry for populate-jekyll
@@ -88,6 +90,7 @@ Options:
 ## populate-dscensor
 
 ```
+(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent.py populate-dscensor --help
 Usage: lis-autocontent.py populate-dscensor [OPTIONS]
 
   CLI entry for populate-dscensor

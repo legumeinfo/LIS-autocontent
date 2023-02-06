@@ -1,10 +1,27 @@
+"""CLI for interacting with the ProcessCollections class."""
 #!/usr/bin/env python3
 
-import os
 import sys
+import logging
 import click
-from .lis_common import setup_logging
-from .genus_species_collections import ProcessCollections
+from process_collections import ProcessCollections
+
+
+def setup_logging(log_file, log_level, process):
+    """initializes a logger object with a common format"""
+    log_level = getattr(
+        logging, log_level.upper(), logging.INFO
+    )  # set provided or set INFO
+    msg_format = "%(asctime)s|%(name)s|[%(levelname)s]: %(message)s"
+    logging.basicConfig(format=msg_format, datefmt="%m-%d %H:%M", level=log_level)
+    log_handler = logging.FileHandler(log_file, mode="w")
+    formatter = logging.Formatter(msg_format)
+    log_handler.setFormatter(formatter)
+    logger = logging.getLogger(
+        f"{process}"
+    )  # sets what will be printed for the log process
+    logger.addHandler(log_handler)
+    return logger
 
 
 @click.command()
@@ -16,13 +33,23 @@ from .genus_species_collections import ProcessCollections
 @click.option(
     "--collections_out", default="../_data/taxa/", help="""Output for collections."""
 )
-def populate_jekyll(taxa_list, collections_out):
+@click.option(
+    "--log_file",
+    default="./populate-jekyll.log",
+    help="""Log file to output messages. (default: ./populate-jekyll.log)""",
+)
+@click.option(
+    "--log_level",
+    default="INFO",
+    help="""Log Level to output messages. (default: INFO)""",
+)
+def populate_jekyll(taxa_list, collections_out, log_file, log_level):
     """CLI entry for populate-jekyll"""
-    logger = setup_logging("./testme.log", "", "populate-jekyll")
+    logger = setup_logging(log_file, log_level, "populate-jekyll")
     logger.info("Processing Collections...")
     parser = ProcessCollections(logger)  # initialize class
     logger.info("Outputting Collections...")
-    parser.parse_collections(taxa_list, collections_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
 
 
 @click.command()
@@ -33,7 +60,7 @@ def populate_jekyll(taxa_list, collections_out):
 )
 @click.option(
     "--nodes_out",
-    default="/var/www/html/dscensor",
+    default="./autocontent",
     help="""Output for dscensor nodes.""",
 )
 @click.option(
@@ -51,7 +78,7 @@ def populate_dscensor(taxa_list, nodes_out, log_file, log_level):
     logger = setup_logging(log_file, log_level, "populate-dscensor")
     parser = ProcessCollections(logger)  # initialize class
     logger.info("Processing Collections...")
-    parser.parse_collections(taxa_list, nodes_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
     logger.info("Creating DSCensor Nodes...")
     parser.populate_dscensor(nodes_out)  # populate JBrowse2
 
@@ -65,8 +92,8 @@ def populate_dscensor(taxa_list, nodes_out, log_file, log_level):
 )
 @click.option(
     "--jbrowse_out",
-    default="/var/www/html/jbrowse2_autodeploy",
-    help="""Output directory for Jbrowse2. (Default: /var/www/html/jbrowse2_autodeploy)""",
+    default="./autocontent",
+    help="""Output directory for Jbrowse2. (Default: ./autocontent)""",
 )
 @click.option(
     "--cmds_only",
@@ -93,7 +120,7 @@ def populate_jbrowse2(
         sys.exit(1)
     parser = ProcessCollections(logger, jbrowse_url=jbrowse_url)  # initialize class
     logger.info("Processing Collections...")
-    parser.parse_collections(taxa_list, jbrowse_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
     logger.info("Creating JBrowse2 Config...")
     parser.populate_jbrowse2(jbrowse_out, cmds_only)  # populate JBrowse2
 
@@ -106,8 +133,8 @@ def populate_jbrowse2(
 )
 @click.option(
     "--blast_out",
-    default="/var/www/html/db/Genomic_Sequence_Collection",
-    help="""Output directory for BLAST DBs. (Default: /var/www/html/db/Genomic_Sequence_Collection)""",
+    default="./autocontent",
+    help="""Output directory for BLAST DBs. (Default: ./autocontent)""",
 )
 @click.option(
     "--cmds_only",
@@ -129,6 +156,6 @@ def populate_blast(taxa_list, blast_out, cmds_only, log_file, log_level):
     logger = setup_logging(log_file, log_level, "populate-blast")
     parser = ProcessCollections(logger)  # initialize class
     logger.info(f"Processing Collections from {taxa_list}")
-    parser.parse_collections(taxa_list, blast_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
     logger.info("Creating BLAST DBs...")
     parser.populate_blast(blast_out, cmds_only)  # populate BLAST
