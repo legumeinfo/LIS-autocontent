@@ -49,7 +49,7 @@ def populate_jekyll(taxa_list, collections_out, log_file, log_level):
     logger.info("Processing Collections...")
     parser = ProcessCollections(logger)  # initialize class
     logger.info("Outputting Collections...")
-    parser.parse_collections(taxa_list, collections_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
 
 
 @click.command()
@@ -78,7 +78,7 @@ def populate_dscensor(taxa_list, nodes_out, log_file, log_level):
     logger = setup_logging(log_file, log_level, "populate-dscensor")
     parser = ProcessCollections(logger)  # initialize class
     logger.info("Processing Collections...")
-    parser.parse_collections(taxa_list, nodes_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
     logger.info("Creating DSCensor Nodes...")
     parser.populate_dscensor(nodes_out)  # populate JBrowse2
 
@@ -120,7 +120,7 @@ def populate_jbrowse2(
         sys.exit(1)
     parser = ProcessCollections(logger, jbrowse_url=jbrowse_url)  # initialize class
     logger.info("Processing Collections...")
-    parser.parse_collections(taxa_list, jbrowse_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
     logger.info("Creating JBrowse2 Config...")
     parser.populate_jbrowse2(jbrowse_out, cmds_only)  # populate JBrowse2
 
@@ -156,6 +156,6 @@ def populate_blast(taxa_list, blast_out, cmds_only, log_file, log_level):
     logger = setup_logging(log_file, log_level, "populate-blast")
     parser = ProcessCollections(logger)  # initialize class
     logger.info(f"Processing Collections from {taxa_list}")
-    parser.parse_collections(taxa_list, blast_out)  # parse_collections
+    parser.parse_collections(taxa_list)  # parse_collections
     logger.info("Creating BLAST DBs...")
     parser.populate_blast(blast_out, cmds_only)  # populate BLAST
