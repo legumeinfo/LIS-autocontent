@@ -1,14 +1,16 @@
+"""Entry point executable for the CLI. Gets added to PATH on python setup.py install"""
 #!/usr/bin/env python3
 
-import os
 import click
-import lis_cli as lis_cli
+import lis_cli
 
 
 @click.group()
 def cli():
     """CLI entry for LIS-autocontent"""
-    pass
+
+
+#    pass
 
 
 cli.add_command(lis_cli.populate_jekyll)

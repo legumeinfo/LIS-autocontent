@@ -1,13 +1,14 @@
+"""Populate collections and resources for JBrowse2 and BLAST from a remote Datastore."""
 #!/usr/bin/env python3
 
 import os
 import sys
-import yaml
 import json
 import pathlib
-import requests
 import subprocess
 from html.parser import HTMLParser
+import requests
+import yaml
 
 
 class ProcessCollections:
@@ -24,7 +25,7 @@ class ProcessCollections:
         if self.logger:
             self.logger.info("logger initialized")
         else:  # logger object required
-            print(f"logger required to initialize ProcessCollections")
+            print("logger required to initialize process_collections")
             sys.exit(1)
         self.collections = []  # stores all collections from self.parse_attributes
         self.datastore_url = datastore_url  # URL to search for collections
@@ -61,7 +62,7 @@ class ProcessCollections:
     def get_remote(self, url):
         """Uses requests.get to grab remote URL returns response object otherwise returns False"""
         logger = self.logger
-        response = requests.get(url)  # get remote object
+        response = requests.get(url, timeout=5)  # get remote object
         if response.status_code == 200:  # SUCCESS
             return response
         logger.debug(f"GET failed with status {response.status_code} for: {url}")
@@ -198,11 +199,11 @@ class ProcessCollections:
             self.out_dir = out_dir
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
         self.process_collections(True, "dscensor")  # process collections for DSCensor
-        for n in self.file_objects:  # write all processed objects to node files
+        for node in self.file_objects:  # write all processed objects to node files
             node_out = open(
-                f'{self.out_dir}/{n["filename"]}.json', "w"
+                f'{self.out_dir}/{node["filename"]}.json', "w", encoding="utf-8"
             )  # file to write node to
-            node_out.write(json.dumps(n))
+            node_out.write(json.dumps(node))
             node_out.close()
 
     def add_collections(self, collection_type, genus, species):
@@ -292,7 +293,7 @@ class ProcessCollections:
                 collection_type == "annotations"
             ):  # add gff3 annotation files and protein/protein_primary. genome_main parent
                 genome_lookup = ".".join(lookup.split(".")[:-1])  # genome parent prefix
-                self.files["genomes"][genome_lookup]["url"]
+                #                self.files["genomes"][genome_lookup]["url"]
                 parent = genome_lookup
                 url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz"
                 self.files[collection_type][lookup] = {  # gene_models_main
@@ -353,18 +354,18 @@ class ProcessCollections:
             elif (
                 collection_type == "genome_alignments"
             ):  # Synteny after the new changes. Parent is a tuple with both genome_main files
-                dotplot_view = {  # session object for jbrowse2 dotplot view populate below with parent1 and parent2
-                    " views ": [
-                        {
-                            " type ": " DotplotView ",
-                            " views ": [
-                                {" assembly ": " volvox "},
-                                {" assembly ": " volvox "},
-                            ],
-                            " tracks ": [" volvox_fake_synteny "],
-                        }
-                    ]
-                }
+                #                dotplot_view = {  # session object for jbrowse2 dotplot view populate below with parent1 and parent2
+                #                    " views ": [
+                #                        {
+                #                            " type ": " DotplotView ",
+                #                            " views ": [
+                #                                {" assembly ": " volvox "},
+                #                                {" assembly ": " volvox "},
+                #                            ],
+                #                            " tracks ": [" volvox_fake_synteny "],
+                #                        }
+                #                    ]
+                #                }
                 checksum_url = (
                     f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
                 )
@@ -421,6 +422,7 @@ class ProcessCollections:
                 )
             else:  # get failed for
                 logger.debug(f"GET Failed for README {readme_url}")
+        return True
 
     def process_species(self, genus, species):
         """Process species and genus from genus_description object"""
@@ -498,9 +500,15 @@ class ProcessCollections:
             genus_resources_filename = f"{collection_dir}/genus_resources.yml"  # local file to write genus resources
             species_resources_filename = f"{collection_dir}/species_resources.yml"  # local file to write species resources
             species_collections_filename = f"{collection_dir}/species_collections.yml"  # local file to write collections
-            self.species_collections_handle = open(species_collections_filename, "w")
-            self.genus_resources_handle = open(genus_resources_filename, "w")
-            self.species_resources_handle = open(species_resources_filename, "w")
+            self.species_collections_handle = open(
+                species_collections_filename, "w", encoding="utf-8"
+            )
+            self.genus_resources_handle = open(
+                genus_resources_filename, "w", encoding="utf-8"
+            )
+            self.species_resources_handle = open(
+                species_resources_filename, "w", encoding="utf-8"
+            )
             collection_string = "---\nspecies:"
             print("---", file=self.genus_resources_handle)  # write genus resources
             yaml.dump(
@@ -531,12 +539,11 @@ class ProcessCollections:
             self.species_collections_handle.close()
 
     def parse_collections(
-        self, target="../_data/taxon_list.yml", species_collections=None
+        self, target="../_data/taxon_list.yml"
     ):  # refactored from SammyJava
         """Retrieve and output collections for jekyll site"""
-        logger = self.logger
         taxon_list = yaml.load(
-            open(target, "r").read(), Loader=yaml.FullLoader
+            open(target, "r", encoding="utf-8").read(), Loader=yaml.FullLoader
         )  # load taxon list
         for taxon in taxon_list:
             self.process_taxon(taxon)  # process taxon object

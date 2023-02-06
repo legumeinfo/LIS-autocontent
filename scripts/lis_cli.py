@@ -1,10 +1,10 @@
+"""CLI for interacting with the ProcessCollections class."""
 #!/usr/bin/env python3
 
-import os
 import sys
-import click
 import logging
-from ProcessCollections import ProcessCollections
+import click
+from process_collections import ProcessCollections
 
 
 def setup_logging(log_file, log_level, process):
