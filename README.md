@@ -18,9 +18,9 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 1. Clone repository. `git clone https://github.com/legumeinfo/LIS-autocontent.git`
 2. Create a virtual environment for python3 `python3 -m venv lis_autocontent_env`  (optional)
 3. Source virtual environment `. ./lis_autocontent_env/bin/activate`  (optional)
-4. CD into repo and install requirements. `(lis_autocontent_env) [ctc@haldane lisautocontent]$ cd LIS-autocontent/;pip install -r requirements.txt`  (optional)
+4. CD into repo and install requirements. `cd LIS-autocontent/;pip install -r requirements.txt`  (optional)
 5. Install Black and pre-commit for git hooks. `pip install black pre-commit`
-6. Initialize pre-commit. `pre-commit install`
+6. Initialize pre-commit (if you haven't already). `pre-commit install`
 7. Build package locally. `python setup.py build` (optional)
 8. Install package into env and add to PATH. `python setup.py install` (optional)
 
