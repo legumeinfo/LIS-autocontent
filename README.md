@@ -27,7 +27,7 @@ Scrapes the LIS datastore (https://data.legumeinfo.org) and populates various co
 ## Run
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ lis-autocontent --help
+(lis_autocontent_env) $ lis-autocontent --help
 Usage: lis-autocontent [OPTIONS] COMMAND [ARGS]...
 
   Click Group Object to Attach Commands.
