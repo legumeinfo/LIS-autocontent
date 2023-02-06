@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(
-    name="lis-autocontent",
+    name="lis_autocontent",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
     install_requires=[
@@ -14,8 +14,13 @@ setup(
         "urllib3==1.26.9",
     ],
     scripts=[
-        "scripts/lis-autocontent.py",
+        "scripts/lis_autocontent.py",
         "scripts/process_collections.py",
         "scripts/lis_cli.py",
     ],
+    entry_points={
+        "console_scripts": [
+            "lis-autocontent = lis_autocontent:cli_entry_point",
+        ]
+    },
 )
