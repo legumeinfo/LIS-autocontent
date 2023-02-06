@@ -1,49 +1,79 @@
 # Examples
 
+Below are examples that use the various cli entry points to populate backend objects for a genus centric LIS site.
+
+If you want to batch the commands for JBrowse2 and BLAST DB creation you can add the "--cmds_only" flag and capture STDOUT.
+
 ## Build Collections and Resources
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ./lis-autocontent.py populate-jekyll --taxa_list ./examples/cicer.yml --collections_out ./test_jekyll
+(lis_autocontent_env) $ lis-autocontent populate-jekyll --taxa_list ./examples/cicer.yml --collections_out ./test_jekyll
 
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ls -ltr test_jekyll/
-total 0
-drwxrwxr-x. 2 ctc ctc 106 Feb  1 12:54 Cicer
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ls -ltr test_jekyll/Cicer/
-total 16
--rw-rw-r--. 1 ctc ctc 1724 Feb  1 12:54 genus_resources.yml
--rw-rw-r--. 1 ctc ctc 3335 Feb  1 12:55 species_collections.yml
--rw-rw-r--. 1 ctc ctc 6038 Feb  1 12:55 species_resources.yml
+(lis_autocontent_env) $ ls -1 test_jekyll/
+Cicer
+(lis_autocontent_env) $ ls -1 test_jekyll/Cicer/
+genus_resources.yml
+species_collections.yml
+species_resources.yml
 ```
 
 ## Build BLAST DBs
 
 ```
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ./lis-autocontent.py populate-blast --taxa_list ./examples/cicer.yml --blast_out ./test_blast/
+(lis_autocontent_env) $ lis-autocontent populate-blast --taxa_list ./examples/cicer.yml --blast_out ./test_blast
 
-(lisautocontent_env) [ctc@haldane LIS-autocontent]$ ls -ltr test_blast/ | egrep "pdb|ndb" | less
--rw-rw-r--. 1 ctc ctc    765952 Feb  1 13:07 cicar.CDCFrontier.gnm1.ndb
--rw-rw-r--. 1 ctc ctc    704512 Feb  1 13:07 cicar.CDCFrontier.gnm2.ndb
--rw-rw-r--. 1 ctc ctc    237568 Feb  1 13:08 cicar.CDCFrontier.gnm3.ndb
--rw-rw-r--. 1 ctc ctc   3653632 Feb  1 13:08 cicar.ICC4958.gnm2.ndb
--rw-rw-r--. 1 ctc ctc   1454080 Feb  1 13:09 cicec.S2Drd065.gnm1.ndb
--rw-rw-r--. 1 ctc ctc    249856 Feb  1 13:09 cicre.Besev079.gnm1.ndb
--rw-rw-r--. 1 ctc ctc   3100672 Feb  1 13:10 cicar.CDCFrontier.gnm1.ann1.protein.pdb
--rw-rw-r--. 1 ctc ctc   2760704 Feb  1 13:10 cicar.CDCFrontier.gnm2.ann1.protein_primary.pdb
--rw-rw-r--. 1 ctc ctc   3444736 Feb  1 13:10 cicar.CDCFrontier.gnm2.ann1.protein.pdb
--rw-rw-r--. 1 ctc ctc   3518464 Feb  1 13:10 cicar.CDCFrontier.gnm3.ann1.protein.pdb
--rw-rw-r--. 1 ctc ctc   3039232 Feb  1 13:10 cicar.ICC4958.gnm2.ann1.protein_primary.pdb
--rw-rw-r--. 1 ctc ctc   3080192 Feb  1 13:10 cicar.ICC4958.gnm2.ann1.protein.pdb
--rw-rw-r--. 1 ctc ctc   3792896 Feb  1 13:10 cicec.S2Drd065.gnm1.ann1.protein.pdb
--rw-rw-r--. 1 ctc ctc   4005888 Feb  1 13:10 cicre.Besev079.gnm1.ann1.protein.pdb
+(lis_autocontent_env) $ ls -1 test_blast/ | egrep "pdb|ndb"
+cicar.CDCFrontier.gnm1.ndb
+cicar.CDCFrontier.gnm2.ndb
+cicar.CDCFrontier.gnm3.ndb
+cicar.ICC4958.gnm2.ndb
+cicec.S2Drd065.gnm1.ndb
+cicre.Besev079.gnm1.ndb
+cicar.CDCFrontier.gnm1.ann1.protein.pdb
+cicar.CDCFrontier.gnm2.ann1.protein_primary.pdb
+cicar.CDCFrontier.gnm2.ann1.protein.pdb
+cicar.CDCFrontier.gnm3.ann1.protein.pdb
+cicar.ICC4958.gnm2.ann1.protein_primary.pdb
+cicar.ICC4958.gnm2.ann1.protein.pdb
+cicec.S2Drd065.gnm1.ann1.protein.pdb
+cicre.Besev079.gnm1.ann1.protein.pdb
 ```
 
 ## Generate JBrowse2 Config
 
 ```
+(lis_autocontent_env) $ lis-autocontent populate-jbrowse2 --jbrowse_url "https://my_genus.legumeinfo.org/tools/jbrowse2" --taxa_list ./examples/cicer.yml --jbrowse_out ./test_jbrowse
+
+(lis_autocontent_env) $ ls -1 ./test_jbrowse
+config.json
 ```
 
 ## Generate DSCensor Nodes
 
 ```
-```
+(lis_autocontent_env) $ lis-autocontent populate-dscensor --taxa_list ./examples/cicer.yml --nodes_out ./test_nodes
 
+(lis_autocontent_env) $ ls -1 test_nodes/
+cicar.CDCFrontier.gnm1.ann1.json
+cicar.CDCFrontier.gnm1.ann1.protein.json
+cicar.CDCFrontier.gnm1.json
+cicar.CDCFrontier.gnm2.ann1.json
+cicar.CDCFrontier.gnm2.ann1.protein.json
+cicar.CDCFrontier.gnm2.ann1.protein_primary.json
+cicar.CDCFrontier.gnm2.json
+cicar.CDCFrontier.gnm3.ann1.json
+cicar.CDCFrontier.gnm3.ann1.protein.json
+cicar.CDCFrontier.gnm3.json
+cicar.CDCFrontier.gnm3.x.cicec.S2Drd065.gnm1.PXV3.minimap2.paf.gz.json
+cicar.CDCFrontier.gnm3.x.cicre.Besev079.gnm1.PXV3.minimap2.paf.gz.json
+cicar.ICC4958.gnm2.ann1.json
+cicar.ICC4958.gnm2.ann1.protein.json
+cicar.ICC4958.gnm2.ann1.protein_primary.json
+cicar.ICC4958.gnm2.json
+cicec.S2Drd065.gnm1.ann1.json
+cicec.S2Drd065.gnm1.ann1.protein.json
+cicec.S2Drd065.gnm1.json
+cicre.Besev079.gnm1.ann1.json
+cicre.Besev079.gnm1.ann1.protein.json
+cicre.Besev079.gnm1.json
+```
