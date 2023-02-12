@@ -112,6 +112,7 @@ class ProcessCollections:
                 if not url:  # do not take objects with no defined link
                     continue
                 name = self.files[collection_type][dsfile]["name"]
+                dsname = self.files[collection_type][dsfile]["url"].split("/")[-1]
                 genus = self.files[collection_type][dsfile]["genus"]
                 taxid = self.files[collection_type][dsfile].get("taxid", 0)
                 parent = self.files[collection_type][dsfile]["parent"]
@@ -125,7 +126,12 @@ class ProcessCollections:
                         "filename": name,
                         "filetype": filetype,
                         "url": url,
-                        "counts": "",
+                        "counts": self.files[collection_type][dsfile].get(
+                            "counts", None
+                        ),
+                        "buscos": self.files[collection_type][dsfile].get(
+                            "busco", None
+                        ),
                         "genus": genus,
                         "species": species,
                         "origin": "LIS",
@@ -206,6 +212,50 @@ class ProcessCollections:
             node_out.write(json.dumps(node))
             node_out.close()
 
+    def parse_busco(self, busco_url):
+        """Grab BUSCOs from remote busco_url"""
+        logger = self.logger
+        busco_response = self.get_remote(busco_url)
+        if not busco_response:
+            logger.debug(busco_response)
+            return {}
+        logger.debug(f"Adding BUSCO: {busco_response}")
+        busco_data = json.loads(busco_response.text)
+        logger.debug(busco_data)
+        results = busco_data["results"]  # get stats from run for genome
+        complete = float(results["Complete"] / 100)
+        single_copy = float(results["Single copy"] / 100)
+        multi_copy = float(results["Multi copy"] / 100)
+        fragmented = float(results["Fragmented"] / 100)
+        missing = float(results["Missing"] / 100)
+        markers = float(results["n_markers"])
+        records = int(results.get("Number of scaffolds", 0))
+        contigs = int(results.get("Number of contigs", 0))
+        all_bases = int(results.get("Total length", 0))
+        n50 = int(results.get("Scaffold N50", 0))
+        gap_bases = 0
+        if records:
+            gap_bases = int(all_bases * float(results["Percent gaps"].replace("%", "")))
+        else:
+            logger.debug(f"No FASTA Stats for: {busco_url}")
+        busco_return = {
+            "complete_buscos": int(complete * markers),
+            "single_copy_buscos": int(single_copy * markers),
+            "duplicate_buscos": int(multi_copy * markers),
+            "fragmented_buscos": int(fragmented * markers),
+            "missing_buscos": int(missing * markers),
+            "total_buscos": int(markers),
+        }
+        genome_return = {
+            "contigs": contigs,
+            "records": records,
+            "N50": n50,
+            "allbases": all_bases,
+            "gapbases": gap_bases,
+            "gaps": contigs - 1,  # this is a hack for now with the gaps value
+        }
+        return {"counts": genome_return, "busco": busco_return}  # return
+
     def add_collections(self, collection_type, genus, species):
         """Adds collection to self.files[collection_type] for later use"""
         logger = self.logger
@@ -269,9 +319,9 @@ class ProcessCollections:
                     "name": f"JBrowse2 {lookup}",
                     "URL": str(linear_url).replace(
                         "'", "%22"
-                    ),  # url encode for yml file and Jekyll linking
+                    ),  # url encode for .yml file and Jekyll linking
                     "description": "JBrowse2 Linear Genome View",
-                }  # the object that will be written into the yml file
+                }  # the object that will be written into the .yml file
                 if strain_lookup not in self.infraspecies_resources:
                     self.infraspecies_resources[
                         strain_lookup
@@ -279,6 +329,11 @@ class ProcessCollections:
                 if self.jbrowse_url:  # dont add data if no jbrowse url set
                     self.infraspecies_resources[strain_lookup].append(linear_data)
                 logger.debug(url)
+                busco_url = f"{self.datastore_url}{collection_dir}/BUSCO/{parts[0]}.{parts[1]}.busco.fabales_odb10.short_summary.json"
+                genome_stats = self.parse_busco(busco_url)
+                logger.debug(genome_stats)
+                if not genome_stats:
+                    logger.debug(f"No short summary for: {busco_url}")
                 self.files[collection_type][lookup] = {
                     "url": url,
                     "name": lookup,
@@ -287,7 +342,10 @@ class ProcessCollections:
                     "species": species,
                     "infraspecies": parts[1],
                     "taxid": 0,
-                }  # add type and url
+                    "busco": genome_stats.get("busco"),
+                    "counts": genome_stats.get("counts"),
+                }  # add type and lookup for object with labels, stats and buscos
+                logger.debug(self.files[collection_type][lookup])
             ###
             elif (
                 collection_type == "annotations"
