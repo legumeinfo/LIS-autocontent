@@ -129,9 +129,7 @@ class ProcessCollections:
                         "counts": self.files[collection_type][dsfile].get(
                             "counts", None
                         ),
-                        "buscos": self.files[collection_type][dsfile].get(
-                            "busco", None
-                        ),
+                        "busco": self.files[collection_type][dsfile].get("busco", None),
                         "genus": genus,
                         "species": species,
                         "origin": "LIS",
@@ -282,6 +280,7 @@ class ProcessCollections:
             parent = ""
             parts = self.get_attributes(parts)
             lookup = f"{parts[0]}.{'.'.join(name.split('.')[:-1])}"  # reference name in datastructure
+            strain_lookup = lookup.split(".")[1]  # the strain for the lookup
             if collection_type == "genomes":  # add parent genome_main files
                 ref = ""
                 stop = 0
@@ -313,7 +312,6 @@ class ProcessCollections:
                         }
                     ]
                 }
-                strain_lookup = lookup.split(".")[1]  # the strain for the lookup
                 linear_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}"  # build the URL for the resource
                 linear_data = {
                     "name": f"JBrowse2 {lookup}",
@@ -340,7 +338,7 @@ class ProcessCollections:
                     "parent": parent,
                     "genus": genus,
                     "species": species,
-                    "infraspecies": parts[1],
+                    "infraspecies": strain_lookup,
                     "taxid": 0,
                     "busco": genome_stats.get("busco"),
                     "counts": genome_stats.get("counts"),
@@ -360,7 +358,7 @@ class ProcessCollections:
                     "parent": parent,
                     "genus": genus,
                     "species": species,
-                    "infraspecies": parts[1],
+                    "infraspecies": strain_lookup,
                     "taxid": 0,
                 }  # add type and url
                 protprimary_url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.protein_primary.faa.gz"
@@ -375,7 +373,7 @@ class ProcessCollections:
                         "parent": parent,
                         "genus": genus,
                         "species": species,
-                        "infraspecies": parts[1],
+                        "infraspecies": strain_lookup,
                         "taxid": 0,
                     }
                 else:
@@ -393,7 +391,7 @@ class ProcessCollections:
                         "parent": parent,
                         "genus": genus,
                         "species": species,
-                        "infraspecies": parts[1],
+                        "infraspecies": strain_lookup,
                         "taxid": 0,
                     }
                 else:
@@ -454,7 +452,7 @@ class ProcessCollections:
                                     "parent": [parent1, parent2],
                                     "genus": genus,
                                     "species": species,
-                                    "infraspecies": parts[1],
+                                    "infraspecies": strain_lookup,
                                     "taxid": 0,
                                 }
                                 logger.debug(self.files[collection_type][paf_lookup])
