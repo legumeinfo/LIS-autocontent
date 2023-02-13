@@ -125,6 +125,7 @@ class ProcessCollections:
                     {
                         "filename": name,
                         "filetype": filetype,
+                        "canonical_type": filetype,
                         "url": url,
                         "counts": self.files[collection_type][dsfile].get(
                             "counts", None
