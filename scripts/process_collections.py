@@ -234,7 +234,9 @@ class ProcessCollections:
         n50 = int(results.get("Scaffold N50", 0))
         gap_bases = 0
         if records:
-            gap_bases = int(all_bases * float(results["Percent gaps"].replace("%", "")))
+            gap_bases = int(
+                all_bases * float(results["Percent gaps"].replace("%", "")) / 100
+            )
         else:
             logger.debug(f"No FASTA Stats for: {busco_url}")
         busco_return = {
