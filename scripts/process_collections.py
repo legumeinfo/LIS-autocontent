@@ -255,7 +255,13 @@ class ProcessCollections:
             "gapbases": gap_bases,
             "gaps": contigs - 1,  # this is a hack for now with the gaps value
         }
-        return {"counts": genome_return, "busco": busco_return}  # return
+        gff_return = (
+            {}
+        )  # add this later if we decide to process gff stats here self.gff3_stats
+        if "genomes" in busco_url:
+            return {"counts": genome_return, "busco": busco_return}  # return
+        elif "annotations" in busco_url:
+            return {"counts": gff_return, "busco": busco_return}
 
     def add_collections(self, collection_type, genus, species):
         """Adds collection to self.files[collection_type] for later use"""
@@ -355,6 +361,11 @@ class ProcessCollections:
                 #                self.files["genomes"][genome_lookup]["url"]
                 parent = genome_lookup
                 url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz"
+                busco_url = f"{self.datastore_url}{collection_dir}/BUSCO/{parts[0]}.{parts[1]}.busco.fabales_odb10.short_summary.json"
+                annotation_stats = self.parse_busco(busco_url)
+                logger.debug(annotation_stats)
+                if not annotation_stats:
+                    logger.debug(f"No short summary for: {busco_url}")
                 self.files[collection_type][lookup] = {  # gene_models_main
                     "url": url,
                     "name": lookup,
@@ -363,7 +374,10 @@ class ProcessCollections:
                     "species": species,
                     "infraspecies": strain_lookup,
                     "taxid": 0,
+                    "busco": annotation_stats.get("busco"),
+                    "counts": annotation_stats.get("counts"),
                 }  # add type and url
+                logger.debug(self.files[collection_type][lookup])
                 protprimary_url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.protein_primary.faa.gz"
                 protprimary_response = self.get_remote(protprimary_url)
                 if protprimary_response:
