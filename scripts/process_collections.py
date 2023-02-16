@@ -27,6 +27,7 @@ class ProcessCollections:
         else:  # logger object required
             print("logger required to initialize process_collections")
             sys.exit(1)
+        self.from_github = ""  # read from github
         self.collections = []  # stores all collections from self.parse_attributes
         self.datastore_url = datastore_url  # URL to search for collections
         self.jbrowse_url = jbrowse_url  # URL to append jbrowse2 sessions
@@ -112,7 +113,7 @@ class ProcessCollections:
                 if not url:  # do not take objects with no defined link
                     continue
                 name = self.files[collection_type][dsfile]["name"]
-                dsname = self.files[collection_type][dsfile]["url"].split("/")[-1]
+                #                dsname = self.files[collection_type][dsfile]["url"].split("/")[-1]
                 genus = self.files[collection_type][dsfile]["genus"]
                 taxid = self.files[collection_type][dsfile].get("taxid", 0)
                 parent = self.files[collection_type][dsfile]["parent"]
@@ -265,8 +266,9 @@ class ProcessCollections:
         )  # add this later if we decide to process gff stats here self.gff3_stats
         if "genomes" in busco_url:
             return {"counts": genome_return, "busco": busco_return}  # return
-        elif "annotations" in busco_url:
+        if "annotations" in busco_url:
             return {"counts": gff_return, "busco": busco_return}
+        return {}
 
     def add_collections(self, collection_type, genus, species):
         """Adds collection to self.files[collection_type] for later use"""
@@ -458,7 +460,8 @@ class ProcessCollections:
                 checksum_response = None
                 if from_github:
                     checksum_response = open(
-                        f"{self.from_github}/{collection_dir}CHECKSUM.{parts[1]}.md5"
+                        f"{self.from_github}/{collection_dir}CHECKSUM.{parts[1]}.md5",
+                        encoding="utf-8",
                     ).read()
                 else:
                     checksum_response = self.get_remote(checksum_url)

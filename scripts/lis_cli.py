@@ -52,7 +52,7 @@ def populate_jekyll(taxa_list, collections_out, from_github, log_file, log_level
     """CLI entry for populate-jekyll"""
     logger = setup_logging(log_file, log_level, "populate-jekyll")
     logger.info("Processing Collections...")
-    parser = ProcessCollections(logger)  # initialize class
+    parser = ProcessCollections(logger, out_dir=collections_out)  # initialize class
     logger.info("Outputting Collections...")
     parser.parse_collections(taxa_list, from_github)  # parse_collections
 
@@ -86,7 +86,7 @@ def populate_jekyll(taxa_list, collections_out, from_github, log_file, log_level
 def populate_dscensor(taxa_list, nodes_out, from_github, log_file, log_level):
     """CLI entry for populate-dscensor"""
     logger = setup_logging(log_file, log_level, "populate-dscensor")
-    parser = ProcessCollections(logger)  # initialize class
+    parser = ProcessCollections(logger, out_dir=nodes_out)  # initialize class
     logger.info("Processing Collections...")
     parser.parse_collections(taxa_list, from_github)  # parse_collections
     logger.info("Creating DSCensor Nodes...")
@@ -133,7 +133,9 @@ def populate_jbrowse2(
     if not jbrowse_url:
         logger.error("--jbrowse_url required for populate-jbrowse2")
         sys.exit(1)
-    parser = ProcessCollections(logger, jbrowse_url=jbrowse_url)  # initialize class
+    parser = ProcessCollections(
+        logger, jbrowse_url=jbrowse_url, out_dir=jbrowse_out
+    )  # initialize class
     logger.info("Processing Collections...")
     parser.parse_collections(taxa_list, from_github)  # parse_collections
     logger.info("Creating JBrowse2 Config...")
@@ -174,7 +176,7 @@ def populate_jbrowse2(
 def populate_blast(taxa_list, blast_out, from_github, cmds_only, log_file, log_level):
     """CLI entry for populate-blast"""
     logger = setup_logging(log_file, log_level, "populate-blast")
-    parser = ProcessCollections(logger)  # initialize class
+    parser = ProcessCollections(logger, out_dir=blast_out)  # initialize class
     logger.info(f"Processing Collections from {taxa_list}")
     parser.parse_collections(taxa_list, from_github)  # parse_collections
     logger.info("Creating BLAST DBs...")

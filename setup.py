@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="lis_autocontent",
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     install_requires=[
         "certifi==2022.5.18.1",
