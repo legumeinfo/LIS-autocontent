@@ -27,6 +27,7 @@ class ProcessCollections:
         else:  # logger object required
             print("logger required to initialize process_collections")
             sys.exit(1)
+        self.from_github = ""  # read from github
         self.collections = []  # stores all collections from self.parse_attributes
         self.datastore_url = datastore_url  # URL to search for collections
         self.jbrowse_url = jbrowse_url  # URL to append jbrowse2 sessions
@@ -60,11 +61,11 @@ class ProcessCollections:
         self.species_resources_handle = None  # yaml file to write for species resources
 
     def get_remote(self, url):
-        """Uses requests.get to grab remote URL returns response object otherwise returns False"""
+        """Uses requests.get to grab remote URL returns response.text otherwise returns False"""
         logger = self.logger
         response = requests.get(url, timeout=5)  # get remote object
         if response.status_code == 200:  # SUCCESS
-            return response
+            return response.text
         logger.debug(f"GET failed with status {response.status_code} for: {url}")
         return False
 
@@ -112,6 +113,7 @@ class ProcessCollections:
                 if not url:  # do not take objects with no defined link
                     continue
                 name = self.files[collection_type][dsfile]["name"]
+                #                dsname = self.files[collection_type][dsfile]["url"].split("/")[-1]
                 genus = self.files[collection_type][dsfile]["genus"]
                 taxid = self.files[collection_type][dsfile].get("taxid", 0)
                 parent = self.files[collection_type][dsfile]["parent"]
@@ -124,8 +126,12 @@ class ProcessCollections:
                     {
                         "filename": name,
                         "filetype": filetype,
+                        "canonical_type": filetype,
                         "url": url,
-                        "counts": "",
+                        "counts": self.files[collection_type][dsfile].get(
+                            "counts", None
+                        ),
+                        "busco": self.files[collection_type][dsfile].get("busco", None),
                         "genus": genus,
                         "species": species,
                         "origin": "LIS",
@@ -206,9 +212,69 @@ class ProcessCollections:
             node_out.write(json.dumps(node))
             node_out.close()
 
+    def parse_busco(self, busco_url):
+        """Grab BUSCOs from remote busco_url"""
+        logger = self.logger
+        busco_response = None
+        if self.from_github:
+            if os.path.isfile(busco_url):
+                busco_response = open(busco_url, encoding="utf-8").read()
+        else:
+            busco_response = self.get_remote(busco_url)
+        if not busco_response:
+            logger.debug(busco_response)
+            return {}
+        logger.debug(f"Adding BUSCO: {busco_response}")
+        busco_data = json.loads(busco_response)
+        logger.debug(busco_data)
+        results = busco_data["results"]  # get stats from run for genome
+        complete = float(results["Complete"] / 100)
+        single_copy = float(results["Single copy"] / 100)
+        multi_copy = float(results["Multi copy"] / 100)
+        fragmented = float(results["Fragmented"] / 100)
+        missing = float(results["Missing"] / 100)
+        markers = float(results["n_markers"])
+        records = int(results.get("Number of scaffolds", 0))
+        contigs = int(results.get("Number of contigs", 0))
+        all_bases = int(results.get("Total length", 0))
+        n50 = int(results.get("Scaffold N50", 0))
+        gap_bases = 0
+        if records:
+            gap_bases = int(
+                all_bases * float(results["Percent gaps"].replace("%", "")) / 100
+            )
+        else:
+            logger.debug(f"No FASTA Stats for: {busco_url}")
+        busco_return = {
+            "complete_buscos": int(complete * markers),
+            "single_copy_buscos": int(single_copy * markers),
+            "duplicate_buscos": int(multi_copy * markers),
+            "fragmented_buscos": int(fragmented * markers),
+            "missing_buscos": int(missing * markers),
+            "total_buscos": int(markers),
+        }
+        genome_return = {
+            "contigs": contigs,
+            "records": records,
+            "N50": n50,
+            "allbases": all_bases,
+            "gapbases": gap_bases,
+            "gaps": contigs - 1,  # this is a hack for now with the gaps value
+        }
+        gff_return = (
+            {}
+        )  # add this later if we decide to process gff stats here self.gff3_stats
+        if "genomes" in busco_url:
+            return {"counts": genome_return, "busco": busco_return}  # return
+        if "annotations" in busco_url:
+            return {"counts": gff_return, "busco": busco_return}
+        return {}
+
     def add_collections(self, collection_type, genus, species):
         """Adds collection to self.files[collection_type] for later use"""
         logger = self.logger
+        logger.debug("in add_collections")
+        from_github = self.from_github
         species_url = f"{self.datastore_url}/{genus}/{species}"
         if collection_type not in self.files:  # add new type
             self.files[collection_type] = {}
@@ -222,7 +288,7 @@ class ProcessCollections:
             return False
         self.collections = []  # Set to empty list for use in self.parse_attributes
         self.parse_attributes(
-            collections_response.text
+            collections_response
         )  # Feed response from GET to populate collections
         for collection_dir in self.collections:
             parts = collection_dir.split("/")
@@ -232,6 +298,7 @@ class ProcessCollections:
             parent = ""
             parts = self.get_attributes(parts)
             lookup = f"{parts[0]}.{'.'.join(name.split('.')[:-1])}"  # reference name in datastructure
+            strain_lookup = lookup.split(".")[1]  # the strain for the lookup
             if collection_type == "genomes":  # add parent genome_main files
                 ref = ""
                 stop = 0
@@ -241,7 +308,7 @@ class ProcessCollections:
                     fai_url
                 )  # get fai file to build loc from
                 if fai_response:  # fai SUCCESS 200
-                    (ref, stop) = fai_response.text.split("\n")[0].split()[
+                    (ref, stop) = fai_response.split("\n")[0].split()[
                         :2
                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                     logger.debug(f"{ref},{stop}")
@@ -263,15 +330,14 @@ class ProcessCollections:
                         }
                     ]
                 }
-                strain_lookup = lookup.split(".")[1]  # the strain for the lookup
                 linear_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}"  # build the URL for the resource
                 linear_data = {
                     "name": f"JBrowse2 {lookup}",
                     "URL": str(linear_url).replace(
                         "'", "%22"
-                    ),  # url encode for yml file and Jekyll linking
+                    ),  # url encode for .yml file and Jekyll linking
                     "description": "JBrowse2 Linear Genome View",
-                }  # the object that will be written into the yml file
+                }  # the object that will be written into the .yml file
                 if strain_lookup not in self.infraspecies_resources:
                     self.infraspecies_resources[
                         strain_lookup
@@ -279,15 +345,26 @@ class ProcessCollections:
                 if self.jbrowse_url:  # dont add data if no jbrowse url set
                     self.infraspecies_resources[strain_lookup].append(linear_data)
                 logger.debug(url)
+                busco_url = f"{self.datastore_url}{collection_dir}/BUSCO/{parts[0]}.{parts[1]}.busco.fabales_odb10.short_summary.json"
+                if from_github:
+                    busco_url = f"{self.from_github}/{collection_dir}/BUSCO/{parts[0]}.{parts[1]}.busco.fabales_odb10.short_summary.json"
+                logger.debug(busco_url)
+                genome_stats = self.parse_busco(busco_url)
+                logger.debug(genome_stats)
+                if not genome_stats:
+                    logger.debug(f"No short summary for: {busco_url}")
                 self.files[collection_type][lookup] = {
                     "url": url,
                     "name": lookup,
                     "parent": parent,
                     "genus": genus,
                     "species": species,
-                    "infraspecies": parts[1],
+                    "infraspecies": strain_lookup,
                     "taxid": 0,
-                }  # add type and url
+                    "busco": genome_stats.get("busco"),
+                    "counts": genome_stats.get("counts"),
+                }  # add type and lookup for object with labels, stats and buscos
+                logger.debug(self.files[collection_type][lookup])
             ###
             elif (
                 collection_type == "annotations"
@@ -296,15 +373,26 @@ class ProcessCollections:
                 #                self.files["genomes"][genome_lookup]["url"]
                 parent = genome_lookup
                 url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.gene_models_main.gff3.gz"
+                busco_url = f"{self.datastore_url}{collection_dir}/BUSCO/{parts[0]}.{parts[1]}.busco.fabales_odb10.short_summary.json"
+                if from_github:
+                    busco_url = f"{self.from_github}/{collection_dir}/BUSCO/{parts[0]}.{parts[1]}.busco.fabales_odb10.short_summary.json"
+                logger.debug(busco_url)
+                annotation_stats = self.parse_busco(busco_url)
+                logger.debug(annotation_stats)
+                if not annotation_stats:
+                    logger.debug(f"No short summary for: {busco_url}")
                 self.files[collection_type][lookup] = {  # gene_models_main
                     "url": url,
                     "name": lookup,
                     "parent": parent,
                     "genus": genus,
                     "species": species,
-                    "infraspecies": parts[1],
+                    "infraspecies": strain_lookup,
                     "taxid": 0,
+                    "busco": annotation_stats.get("busco"),
+                    "counts": annotation_stats.get("counts"),
                 }  # add type and url
+                logger.debug(self.files[collection_type][lookup])
                 protprimary_url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.protein_primary.faa.gz"
                 protprimary_response = self.get_remote(protprimary_url)
                 if protprimary_response:
@@ -317,7 +405,7 @@ class ProcessCollections:
                         "parent": parent,
                         "genus": genus,
                         "species": species,
-                        "infraspecies": parts[1],
+                        "infraspecies": strain_lookup,
                         "taxid": 0,
                     }
                 else:
@@ -335,7 +423,7 @@ class ProcessCollections:
                         "parent": parent,
                         "genus": genus,
                         "species": species,
-                        "infraspecies": parts[1],
+                        "infraspecies": strain_lookup,
                         "taxid": 0,
                     }
                 else:
@@ -369,9 +457,17 @@ class ProcessCollections:
                 checksum_url = (
                     f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
                 )
-                checksum_response = self.get_remote(checksum_url)
+                checksum_response = None
+                if from_github:
+                    checksum_response = open(
+                        f"{self.from_github}/{collection_dir}CHECKSUM.{parts[1]}.md5",
+                        encoding="utf-8",
+                    ).read()
+                else:
+                    checksum_response = self.get_remote(checksum_url)
+                logger.debug(checksum_response)
                 if checksum_response:  # checksum SUCCESS 200
-                    for line in checksum_response.text.split("\n"):
+                    for line in checksum_response.split("\n"):
                         logger.debug(line)
                         fields = line.split()
                         if fields:  # process if fields exists
@@ -396,14 +492,21 @@ class ProcessCollections:
                                     "parent": [parent1, parent2],
                                     "genus": genus,
                                     "species": species,
-                                    "infraspecies": parts[1],
+                                    "infraspecies": strain_lookup,
                                     "taxid": 0,
                                 }
                                 logger.debug(self.files[collection_type][paf_lookup])
             readme_url = f"{self.datastore_url}/{collection_dir}README.{name}.yml"  # species collection readme
-            readme_response = self.get_remote(readme_url)
+            readme_response = None
+            if from_github:
+                github_readme = f"{self.from_github}/{collection_dir}README.{name}.yml"
+                if os.path.isfile(github_readme):
+                    readme_response = open(github_readme, encoding="utf-8").read()
+            else:
+                readme_response = self.get_remote(readme_url)
             if readme_response:  # readme get success
-                readme = yaml.load(readme_response.text, Loader=yaml.FullLoader)
+                readme = yaml.load(readme_response, Loader=yaml.FullLoader)
+                print(readme)
                 synopsis = readme["synopsis"]
                 taxid = readme["taxid"]
                 if lookup in self.files[collection_type]:
@@ -427,7 +530,12 @@ class ProcessCollections:
     def process_species(self, genus, species):
         """Process species and genus from genus_description object"""
         logger = self.logger
-        logger.info(f"Searching {self.datastore_url} for: {genus} {species}")
+        logger.debug("in process_species")
+        from_github = self.from_github
+        if from_github:
+            logger.info(f"Searching {self.from_github} for: {genus} {species}")
+        else:
+            logger.info(f"Searching {self.datastore_url} for: {genus} {species}")
         species_url = f"{self.datastore_url}/{genus}/{species}"
         self.infraspecies_resources = {}
         print(f"- name: {species}", file=self.species_collections_handle)
@@ -441,12 +549,19 @@ class ProcessCollections:
 
         species_description_url = f"{species_url}/about_this_collection/description_{genus}_{species}.yml"  # parse for strain resources
         logger.debug(species_description_url)  # get species description url
-        species_description_response = self.get_remote(species_description_url)
+        species_description_response = None
+        if from_github:
+            species_description_response = open(
+                f"{from_github}/{genus}/{species}/about_this_collection/description_{genus}_{species}.yml",
+                encoding="utf-8",
+            ).read()
+        else:
+            species_description_response = self.get_remote(species_description_url)
         if (
             species_description_response
         ):  # Read species description yml and add jbrowse resources to "strains"
             species_description = yaml.load(
-                species_description_response.text, Loader=yaml.FullLoader
+                species_description_response, Loader=yaml.FullLoader
             )  # load the yaml from the datastore for species
             count = 0
             for strain in species_description[
@@ -476,12 +591,22 @@ class ProcessCollections:
     def process_taxon(self, taxon):
         """Retrieve and output collections for jekyll site"""
         logger = self.logger
+        from_github = self.from_github
+        logger.debug(f"in process_taxon {from_github}")
         if not "genus" in taxon:  # genus required for all taxon
             logger.error(f"Genus not found for: {taxon}")
             sys.exit(1)
         genus = taxon["genus"]
         genus_description_url = f"{self.datastore_url}/{genus}/GENUS/about_this_collection/description_{genus}.yml"  # genus desciprion to be read
-        genus_description_response = self.get_remote(genus_description_url)
+        genus_description_response = None
+        if from_github:  # if build locally from github clone of datastore-metadata
+            genus_description_response = open(
+                f"{self.from_github}/{genus}/GENUS/about_this_collection/description_{genus}.yml",
+                encoding="utf-8",
+            ).read()
+        else:
+            genus_description_response = self.get_remote(genus_description_url)
+        logger.debug(genus_description_response)
         self.genus_resources_handle = None  # yaml file to write for genus resources
         self.species_resources_handle = None  # yaml file to write for species resources
         self.species_collections_handle = (
@@ -491,7 +616,7 @@ class ProcessCollections:
             species_collections_filename = None
             self.species_descriptions = []  # null for current taxon genus
             genus_description = yaml.load(
-                genus_description_response.text, Loader=yaml.FullLoader
+                genus_description_response, Loader=yaml.FullLoader
             )  # load yml into python object
             collection_dir = f"{os.path.abspath(self.out_dir)}/{genus}"
             pathlib.Path(collection_dir).mkdir(
@@ -539,9 +664,10 @@ class ProcessCollections:
             self.species_collections_handle.close()
 
     def parse_collections(
-        self, target="../_data/taxon_list.yml"
+        self, target="../_data/taxon_list.yml", from_github="./datastore-metadata"
     ):  # refactored from SammyJava
         """Retrieve and output collections for jekyll site"""
+        self.from_github = os.path.abspath(from_github)
         taxon_list = yaml.load(
             open(target, "r", encoding="utf-8").read(), Loader=yaml.FullLoader
         )  # load taxon list
