@@ -356,7 +356,7 @@ class ProcessCollections:
                 self.files[collection_type][lookup] = {
                     "url": url,
                     "name": lookup,
-                    "parent": parent,
+                    "parent": [parent],
                     "genus": genus,
                     "species": species,
                     "infraspecies": strain_lookup,
@@ -384,7 +384,7 @@ class ProcessCollections:
                 self.files[collection_type][lookup] = {  # gene_models_main
                     "url": url,
                     "name": lookup,
-                    "parent": parent,
+                    "parent": [parent],
                     "genus": genus,
                     "species": species,
                     "infraspecies": strain_lookup,
@@ -402,7 +402,7 @@ class ProcessCollections:
                     ] = {  # protein_primary
                         "url": protprimary_url,
                         "name": protprimary_lookup,
-                        "parent": parent,
+                        "parent": [parent],
                         "genus": genus,
                         "species": species,
                         "infraspecies": strain_lookup,
@@ -420,7 +420,7 @@ class ProcessCollections:
                     self.files[collection_type][protein_lookup] = {  # all proteins
                         "url": protein_url,
                         "name": protein_lookup,
-                        "parent": parent,
+                        "parent": [parent],
                         "genus": genus,
                         "species": species,
                         "infraspecies": strain_lookup,
