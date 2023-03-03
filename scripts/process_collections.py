@@ -155,7 +155,7 @@ class ProcessCollections:
                             "faa.gz"
                         ):  # only process non faa annotations in jbrowse
                             continue
-                        cmd = f"jbrowse add-track -a {parent} --out {self.out_dir}/ --force"
+                        cmd = f"jbrowse add-track -a {parent[0]} --out {self.out_dir}/ --force"
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
                         if not url.endswith(
