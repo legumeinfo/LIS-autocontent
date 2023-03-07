@@ -142,8 +142,8 @@ class ProcessCollections:
                 ### possibly break out next section into methods: blast, jbrowse, then types
                 if collection_type == "genomes":  # add genome
                     if mode == "jbrowse":  # for jbrowse
-                        cmd = f"jbrowse add-assembly -a {name} --out {self.out_dir}/ -t bgzipFasta --force"
-                        cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}" {url}'
+                        cmd = f"jbrowse add-assembly -n {name} --out {self.out_dir}/ -t bgzipFasta --force"
+                        cmd += f' --displayName "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}"'
