@@ -484,12 +484,12 @@ class ProcessCollections:
                                     paf_parts[:3]
                                 )  # parent 1 in pair-wise alignment
                                 parent2 = ".".join(
-                                    paf_parts[5:8]
+                                    paf_parts[4:7]
                                 )  # parent 2 in pair-wise alignment
                                 self.files[collection_type][paf_lookup] = {
                                     "url": paf_url,
                                     "name": paf_lookup,
-                                    "parent": [parent1, parent2],
+                                    "parent": [parent2, parent1],
                                     "genus": genus,
                                     "species": species,
                                     "infraspecies": strain_lookup,
