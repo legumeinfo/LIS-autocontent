@@ -27,7 +27,7 @@ class ProcessCollections:
         else:  # logger object required
             print("logger required to initialize process_collections")
             sys.exit(1)
-        self.from_github = ""  # read from github
+        self.from_github = None  # read from github
         self.collections = []  # stores all collections from self.parse_attributes
         self.datastore_url = datastore_url  # URL to search for collections
         self.jbrowse_url = jbrowse_url  # URL to append jbrowse2 sessions
@@ -69,6 +69,15 @@ class ProcessCollections:
         logger.debug(f"GET failed with status {response.status_code} for: {url}")
         return False
 
+    def head_remote(self, url):
+        """Uses requests.head to grab remote URL returns response.text otherwise returns False"""
+        logger = self.logger
+        response = requests.head(url, timeout=5)  # get remote object
+        if response.status_code == 200:  # SUCCESS
+            return response.text
+        logger.debug(f"GET failed with status {response.status_code} for: {url}")
+        return False
+
     def parse_attributes(self, response_text):  # inherited from Sammyjava
         """parses attributes returned from HTMLParser. Credit to SammyJava"""
         collections = (
@@ -105,14 +114,15 @@ class ProcessCollections:
         logger = self.logger
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
         for collection_type in self.collection_types:  # for all collections
-            for dsfile in self.files[
-                collection_type
-            ]:  # for all files in all collections
+            for dsfile in self.files.get(
+                collection_type, []
+            ):  # for all files in all collections
                 cmd = ""
                 url = self.files[collection_type][dsfile]["url"]
                 if not url:  # do not take objects with no defined link
                     continue
                 name = self.files[collection_type][dsfile]["name"]
+                version = name.split(".")[-1]
                 #                dsname = self.files[collection_type][dsfile]["url"].split("/")[-1]
                 genus = self.files[collection_type][dsfile]["genus"]
                 taxid = self.files[collection_type][dsfile].get("taxid", 0)
@@ -143,10 +153,10 @@ class ProcessCollections:
                 if collection_type == "genomes":  # add genome
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-assembly -n {name} --out {self.out_dir}/ -t bgzipFasta --force"
-                        cmd += f' --displayName "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}" {url}'
+                        cmd += f' --displayName "{genus.capitalize()} {species} {infraspecies} V{version.replace("gnm", "")} {collection_type.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
-                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}"'
+                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} V{version.replace("gnm", "")} {collection_type.capitalize()}"'
                         if taxid:
                             cmd += f" -taxid {taxid}"
                 if collection_type == "annotations":  # add annotation
@@ -156,14 +166,14 @@ class ProcessCollections:
                         ):  # only process non faa annotations in jbrowse
                             continue
                         cmd = f"jbrowse add-track -a {parent[0]} --out {self.out_dir}/ --force"
-                        cmd += f' -n "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}" {url}'
+                        cmd += f' -n "{genus.capitalize()} {species} {infraspecies} V{version.replace("ann", "")} {collection_type.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
                         if not url.endswith(
                             "faa.gz"
                         ):  # only process faa annotations in blast
                             continue
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
-                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} {collection_type.capitalize()}"'
+                        cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype prot -title "{genus.capitalize()} {species} {infraspecies} V{version.replace("ann", "")} {collection_type.capitalize()}"'
                         if taxid:
                             cmd += f" -taxid {taxid}"
                 if collection_type == "genome_alignments":  # add pair-wise paf files
@@ -276,22 +286,40 @@ class ProcessCollections:
         logger.debug("in add_collections")
         from_github = self.from_github
         species_url = f"{self.datastore_url}/{genus}/{species}"
+        collections_url = f"{species_url}/{collection_type}/"
+        collections_dir = None
+        collections_response = None
+        if from_github:
+            species_url = f"{self.from_github}/{genus}/{species}"
+            collections_dir = f"{species_url}/{collection_type}/"
+            if os.path.isdir(collections_dir):
+                collections_response = collections_dir
+        else:
+            collections_response = self.get_remote(collections_url)
+        if not collections_response:  # get remote failed
+            logger.debug(collections_response)
+            return False
         if collection_type not in self.files:  # add new type
             self.files[collection_type] = {}
         print(
             f"  {collection_type}:", file=self.species_collections_handle
         )  # print collection type in species collections
-        collections_url = f"{species_url}/{collection_type}/"
-        collections_response = self.get_remote(collections_url)
-        if not collections_response:  # get remote failed
-            logger.debug(collections_response)
-            return False
         self.collections = []  # Set to empty list for use in self.parse_attributes
-        self.parse_attributes(
-            collections_response
-        )  # Feed response from GET to populate collections
+        if from_github:
+            #            for d in os.walk(collections_dir):
+            for collection_dir in next(os.walk(collections_dir))[1]:
+                collection = "/".join(collections_dir.split("/")[-4:])
+                self.collections.append(f"/{collection}{collection_dir}/")
+        else:
+            self.parse_attributes(
+                collections_response
+            )  # Feed response from GET to populate collections
         for collection_dir in self.collections:
             parts = collection_dir.split("/")
+            #            print(collection_dir, parts)
+            #            ['', 'falafel', 'ctc', 'sw', 'LIS-autocontent', 'datastore-metadata', 'Arachis', 'hypogaea', 'genomes', '']
+            #            ['', 'Arachis', 'hypogaea', 'genomes', 'BaileyII.gnm1.1JTF', '']
+            #            sys.exit(1)
             logger.debug(parts)
             name = parts[4]
             url = ""
@@ -394,7 +422,7 @@ class ProcessCollections:
                 }  # add type and url
                 logger.debug(self.files[collection_type][lookup])
                 protprimary_url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.protein_primary.faa.gz"
-                protprimary_response = self.get_remote(protprimary_url)
+                protprimary_response = self.head_remote(protprimary_url)
                 if protprimary_response:
                     protprimary_lookup = f"{lookup}.protein_primary"
                     self.files[collection_type][
@@ -414,7 +442,7 @@ class ProcessCollections:
                     )
 
                 protein_url = f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.protein.faa.gz"
-                protein_response = self.get_remote(protein_url)
+                protein_response = self.head_remote(protein_url)
                 if protein_response:
                     protein_lookup = f"{lookup}.protein"
                     self.files[collection_type][protein_lookup] = {  # all proteins
@@ -506,7 +534,7 @@ class ProcessCollections:
                 readme_response = self.get_remote(readme_url)
             if readme_response:  # readme get success
                 readme = yaml.load(readme_response, Loader=yaml.FullLoader)
-                print(readme)
+                logger.debug(readme)
                 synopsis = readme["synopsis"]
                 taxid = readme["taxid"]
                 if lookup in self.files[collection_type]:
@@ -667,7 +695,9 @@ class ProcessCollections:
         self, target="../_data/taxon_list.yml", from_github="./datastore-metadata"
     ):  # refactored from SammyJava
         """Retrieve and output collections for jekyll site"""
-        self.from_github = os.path.abspath(from_github)
+        if from_github:  # set to None if empty dir
+            self.from_github = os.path.abspath(from_github)
+        print(f"THIS IS GITHUB: {self.from_github}")
         taxon_list = yaml.load(
             open(target, "r", encoding="utf-8").read(), Loader=yaml.FullLoader
         )  # load taxon list
