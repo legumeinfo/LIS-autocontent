@@ -179,6 +179,11 @@ class ProcessCollections:
                 if collection_type == "genome_alignments":  # add pair-wise paf files
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-track --assemblyNames {','.join(parent)} --out {self.out_dir}/ {url} --force"
+                        bam_url = self.files[collection_type][dsfile].get(
+                            "bam_url", None
+                        )
+                        if bam_url:
+                            cmd += f";jbrowse add-track -a {parent[1]} --indexFile {bam_url}.bai {bam_url}"  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
                         continue  # Not blastable at the moment
                 # MORE CANONICAL TYPES HERE
@@ -470,18 +475,6 @@ class ProcessCollections:
             elif (
                 collection_type == "genome_alignments"
             ):  # Synteny after the new changes. Parent is a tuple with both genome_main files
-                #                dotplot_view = {  # session object for jbrowse2 dotplot view populate below with parent1 and parent2
-                #                    " views ": [
-                #                        {
-                #                            " type ": " DotplotView ",
-                #                            " views ": [
-                #                                {" assembly ": " volvox "},
-                #                                {" assembly ": " volvox "},
-                #                            ],
-                #                            " tracks ": [" volvox_fake_synteny "],
-                #                        }
-                #                    ]
-                #                }
                 checksum_url = (
                     f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
                 )
@@ -522,8 +515,37 @@ class ProcessCollections:
                                     "species": species,
                                     "infraspecies": strain_lookup,
                                     "taxid": 0,
+                                    "bam_url": paf_url.replace("paf.gz", "bam"),
                                 }
                                 logger.debug(self.files[collection_type][paf_lookup])
+                                dotplot_view = {  # session object for jbrowse2 dotplot view populate below with parent1 and parent2
+                                    "views": [
+                                        {
+                                            "type": "DotplotView",
+                                            "views": [
+                                                {"assembly": parent1},
+                                                {"assembly": parent2},
+                                            ],
+                                            "tracks": [],
+                                        }
+                                    ]
+                                }
+                dotplot_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{dotplot_view}"  # build the URL for the resource
+                dotplot_data = {
+                    "name": f"JBrowse2 {lookup}",
+                    "URL": str(dotplot_url).replace(
+                        "'", "%22"
+                    ),  # url encode for .yml file and Jekyll linking
+                    "description": "JBrowse2 Dotplot View",
+                }  # the object that will be written into the .yml file
+                if strain_lookup not in self.infraspecies_resources:
+                    self.infraspecies_resources[
+                        strain_lookup
+                    ] = []  # initialize infraspecies list within species
+                if self.jbrowse_url:  # dont add data if no jbrowse url set
+                    self.infraspecies_resources[strain_lookup].append(
+                        dotplot_data
+                    )  # add data for later writing in resources
             readme_url = f"{self.datastore_url}/{collection_dir}README.{name}.yml"  # species collection readme
             readme_response = None
             if from_github:
