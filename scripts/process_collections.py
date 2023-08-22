@@ -183,7 +183,9 @@ class ProcessCollections:
                             "bam_url", None
                         )
                         if bam_url:
-                            cmd += f';jbrowse add-track -n {bam_url.split("/")[-1]} -a {parent[1]} --out {os.path.abspath(self.out_dir)}/ --indexFile {bam_url}.bai {bam_url} --force'  # add BAM alignment track for genome_alignments
+                            bam_name = bam_url.split("/")[-1]
+                            cmd += f";jbrowse add-track -n {bam_name} --trackId {bam_name} -a {parent[1]}"
+                            cmd += f" --out {os.path.abspath(self.out_dir)}/ --indexFile {bam_url}.bai {bam_url} --force"  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
                         continue  # Not blastable at the moment
                 # MORE CANONICAL TYPES HERE
