@@ -183,7 +183,7 @@ class ProcessCollections:
                             "bam_url", None
                         )
                         if bam_url:
-                            cmd += f";jbrowse add-track -a {parent[1]} --indexFile {bam_url}.bai {bam_url}"  # add BAM alignment track for genome_alignments
+                            cmd += f";jbrowse add-track -n {'x'.join(parent) BAM} -a {parent[1]} --indexFile {bam_url}.bai {bam_url}"  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
                         continue  # Not blastable at the moment
                 # MORE CANONICAL TYPES HERE
