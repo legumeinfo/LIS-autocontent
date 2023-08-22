@@ -152,7 +152,7 @@ class ProcessCollections:
                 ### possibly break out next section into methods: blast, jbrowse, then types
                 if collection_type == "genomes":  # add genome
                     if mode == "jbrowse":  # for jbrowse
-                        cmd = f"jbrowse add-assembly -n {name} --out {self.out_dir}/ -t bgzipFasta --force"
+                        cmd = f"jbrowse add-assembly -n {name} --out {os.path.abspath(self.out_dir)}/ -t bgzipFasta --force"
                         cmd += f' --displayName "{genus.capitalize()} {species} {infraspecies} V{version.replace("gnm", "")} {collection_type.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
@@ -165,7 +165,7 @@ class ProcessCollections:
                             "faa.gz"
                         ):  # only process non faa annotations in jbrowse
                             continue
-                        cmd = f"jbrowse add-track -a {parent[0]} --out {self.out_dir}/ --force"
+                        cmd = f"jbrowse add-track -a {parent[0]} --out {os.path.abspath(self.out_dir)}/ --force"
                         cmd += f' -n "{genus.capitalize()} {species} {infraspecies} V{version.replace("ann", "")} {collection_type.capitalize()}" {url}'
                     elif mode == "blast":  # for blast
                         if not url.endswith(
@@ -178,12 +178,12 @@ class ProcessCollections:
                             cmd += f" -taxid {taxid}"
                 if collection_type == "genome_alignments":  # add pair-wise paf files
                     if mode == "jbrowse":  # for jbrowse
-                        cmd = f"jbrowse add-track --assemblyNames {','.join(parent)} --out {self.out_dir}/ {url} --force"
+                        cmd = f"jbrowse add-track --assemblyNames {','.join(parent)} --out {os.path.abspath(self.out_dir)}/ {url} --force"
                         bam_url = self.files[collection_type][dsfile].get(
                             "bam_url", None
                         )
                         if bam_url:
-                            cmd += f';jbrowse add-track -n "{"x".join(parent)} BAM" -a {parent[1]} --indexFile {bam_url}.bai {bam_url} --force'  # add BAM alignment track for genome_alignments
+                            cmd += f';jbrowse add-track -n {bam_url.split("/")[-1]} -a {parent[1]} --out {os.path.abspath(self.out_dir)}/ --indexFile {bam_url}.bai {bam_url} --force'  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
                         continue  # Not blastable at the moment
                 # MORE CANONICAL TYPES HERE
