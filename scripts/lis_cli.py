@@ -101,6 +101,11 @@ def populate_dscensor(taxa_list, nodes_out, from_github, log_file, log_level):
     help="""Taxa.yml file. (Default: ../_data/taxon_list.yml)""",
 )
 @click.option(
+    "--datastore_url",
+    default="https://data.legumeinfo.org",
+    help="""URL hosting datastore formatted files.""",
+)
+@click.option(
     "--jbrowse_out",
     default="./autocontent",
     help="""Output directory for Jbrowse2. (Default: ./autocontent)""",
@@ -126,7 +131,14 @@ def populate_dscensor(taxa_list, nodes_out, from_github, log_file, log_level):
     help="""Log Level to output messages. (default: INFO)""",
 )
 def populate_jbrowse2(
-    jbrowse_url, taxa_list, jbrowse_out, from_github, cmds_only, log_file, log_level
+    jbrowse_url,
+    datastore_url,
+    taxa_list,
+    jbrowse_out,
+    from_github,
+    cmds_only,
+    log_file,
+    log_level,
 ):
     """CLI entry for populate-jbrowse2"""
     logger = setup_logging(log_file, log_level, "populate-jbrowse2")
@@ -134,7 +146,10 @@ def populate_jbrowse2(
         logger.error("--jbrowse_url required for populate-jbrowse2")
         sys.exit(1)
     parser = ProcessCollections(
-        logger, jbrowse_url=jbrowse_url, out_dir=jbrowse_out
+        logger,
+        jbrowse_url=jbrowse_url,
+        datastore_url=datastore_url,
+        out_dir=jbrowse_out,
     )  # initialize class
     logger.info("Processing Collections...")
     parser.parse_collections(taxa_list, from_github)  # parse_collections
