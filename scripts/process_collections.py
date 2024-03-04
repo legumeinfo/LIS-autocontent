@@ -354,7 +354,7 @@ class ProcessCollections:
                     "views": [
                         {
                             "assembly": lookup,
-                            "loc": f"{ref}:1-{stop}",  # JBrowse2 does not allow null loc
+                            "loc": f"{ref}:1-1000000",  # JBrowse2 does not allow null loc
                             "type": "LinearGenomeView",
                             #                                            "tracks": [
                             #                                                " gff3tabix_genes " ,
