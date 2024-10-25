@@ -156,7 +156,7 @@ class ProcessCollections:
                     if mode == "jbrowse":  # for jbrowse
                         cmd = f"jbrowse add-assembly -n {name} --out {os.path.abspath(self.out_dir)}/ -t bgzipFasta --force"
                         cmd += f' --displayName "{genus.capitalize()} {species} {infraspecies} V{version.replace("gnm", "")} {collection_type.capitalize()}" {url}'
-                        print("url: ", url)
+                        # print("url: ", url)
                     elif mode == "blast":  # for blast
                         cmd = f"set -o pipefail -o errexit -o nounset; curl {url} | gzip -dc"  # retrieve genome and decompress
                         cmd += f'| makeblastdb -parse_seqids -out {self.out_dir}/{name} -hash_index -dbtype nucl -title "{genus.capitalize()} {species} {infraspecies} V{version.replace("gnm", "")} {collection_type.capitalize()}"'
@@ -408,6 +408,7 @@ class ProcessCollections:
                 else:  # fai file could not be accessed
                     logger.error(f"No fai file for: {url}")
                     sys.exit(1)
+
                 linear_session = {  # LinearGenomeView object for JBrowse2
                     "views": [
                         {
@@ -424,6 +425,7 @@ class ProcessCollections:
                     ]
                 }
                 linear_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}"  # build the URL for the resource
+                
                 linear_data = {
                     "name": f"JBrowse2 {lookup}",
                     "URL": str(linear_url).replace(
@@ -431,6 +433,9 @@ class ProcessCollections:
                     ),  # url encode for .yml file and Jekyll linking
                     "description": "JBrowse2 Linear Genome View",
                 }  # the object that will be written into the .yml file
+
+                logger.debug(f"linear data for assembly: {linear_data} \n")
+
                 if strain_lookup not in self.infraspecies_resources:
                     self.infraspecies_resources[strain_lookup] = (
                         []
@@ -610,7 +615,7 @@ class ProcessCollections:
                                     )  # add data for later writing in resources
             ###
             elif collection_type == "expression":  # add parent expr files
-
+                ref=""
                 # Synteny after the new changes. Parent is a tuple with both genome_main files
                 checksum_url = (
                     f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
@@ -632,11 +637,13 @@ class ProcessCollections:
                         fields = line.split()
                         if fields:  # process if fields exists
                             if fields[1].endswith("bw"):  # get bw file
+                                ref = ""
+                                stop = 0
                                 bw_lookup = fields[1].replace(
                                     "./", ""
                                 )  # get bw file to load will start with ./
                                 logger.debug(bw_lookup)
-                                bw_url = f"{self.datastore_url}{collection_dir}{bw_lookup}"  # where the paf file is in the datastore
+                                bw_url = f"{self.datastore_url}{collection_dir}{bw_lookup}"  # where the bigwig file is in the datastore
                                 bw_parts = bw_lookup.split(
                                     "."
                                 )  # split the bw file name into parts delimited by '.'
@@ -655,6 +662,58 @@ class ProcessCollections:
                                     "taxid": 0,
                                 }
                                 logger.debug(self.files[collection_type][bw_lookup])
+
+                                #url =  f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.genome_main.fna.gz"  # genome_main in datastore_url
+                                url = self.files['genomes'][parent]['url']
+                                fai_url = f"{url}.fai"  # get fai file for jbrowse session construction
+                                fai_response = self.get_remote(
+                                    fai_url
+                                )  # get fai file to build loc from
+                                if fai_response:  # fai SUCCESS 200
+                                    (ref, stop) = fai_response.split("\n")[0].split()[
+                                        :2
+                                    ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
+                                    logger.debug(f"{ref},{stop}")
+                                else:  # fai file could not be accessed
+                                    logger.error(f"No fai file for: {url}")
+                                    sys.exit(1)
+
+
+                                linear_session = {  # LinearGenomeView object for JBrowse2
+                                    "views": [
+                                        {
+                                            "assembly": parent,
+                                            #sequence is currently hardcoded, don't know how "ref" works for genomes
+                                            "loc": f"{ref}:1-{stop}",  # JBrowse2 does not allow null loc
+                                            "type": "LinearGenomeView",
+                                            "tracks": [".".join(bw_lookup.split(".")[:-1])]
+                                            #["glyma.Wm82.gnm6.ann1.expr.mixed.Kour_Boone_2014.Clark_defective"]
+                                            #                                                " gff3tabix_genes " ,
+                                            #                                                " volvox_filtered_vcf " ,
+                                            #                                                " volvox_microarray " ,
+                                            #                                                " volvox_cram "
+                                            #                                            ]
+                                        }
+                                    ]
+                                }
+                                linear_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}"  # build the URL for the resource
+                                
+                                linear_data = {
+                                    "name": f"JBrowse2 {parent}",
+                                    "URL": str(linear_url).replace(
+                                        "'", "%22"
+                                    ),  # url encode for .yml file and Jekyll linking
+                                    "description": "JBrowse2 Linear Genome View",
+                                }  # the object that will be written into the .yml file
+
+                                if strain_lookup not in self.infraspecies_resources:
+                                    self.infraspecies_resources[strain_lookup] = (
+                                        []
+                                    )  # initialize infraspecies list within species
+                                if self.jbrowse_url:  # dont add data if no jbrowse url set
+                                    self.infraspecies_resources[strain_lookup].append(linear_data)
+                    
+                                logger.debug(f"linear data for bw: {linear_data} \n")
             ###
 
             readme_url = f"{self.datastore_url}/{collection_dir}README.{name}.yml"  # species collection readme
@@ -828,7 +887,7 @@ class ProcessCollections:
         """Retrieve and output collections for jekyll site"""
         if from_github:  # set to None if empty dir
             self.from_github = os.path.abspath(from_github)
-        print(f"THIS IS GITHUB: {self.from_github}")
+        self.logger.debug(f"THIS IS GITHUB: {self.from_github}")
         taxon_list = yaml.load(
             open(target, "r", encoding="utf-8").read(), Loader=yaml.FullLoader
         )  # load taxon list
