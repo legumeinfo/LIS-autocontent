@@ -705,14 +705,13 @@ class ProcessCollections:
                                     ),  # url encode for .yml file and Jekyll linking
                                     "description": "JBrowse2 Linear Genome View",
                                 }  # the object that will be written into the .yml file
-                                print(f"linear data: {linear_data}")
+                                # print(f"linear data: {linear_data}")
                                 if strain_lookup not in self.infraspecies_resources:
                                     self.infraspecies_resources[strain_lookup] = (
                                         []
                                     )  # initialize infraspecies list within species
                                 if self.jbrowse_url:  # dont add data if no jbrowse url set
                                     self.infraspecies_resources[strain_lookup].append(linear_data)
-
                                 logger.debug(f"linear data for bw: {linear_data} \n")
             ###
 
