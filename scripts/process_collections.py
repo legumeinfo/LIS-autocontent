@@ -208,7 +208,7 @@ class ProcessCollections:
                             project_id = ".".join(bw_name.split(".")[1:-2])
 
                             # cmd = f'jbrowse add-track {bw_name} --assemblyNames {name} --out {os.path.abspath(self.out_dir)} --load copy --force'
-                            cmd = f"jbrowse add-track {url} --name {bw_id[0]} --assemblyNames {parent[0]} --out {os.path.abspath(self.out_dir)} --force"
+                            cmd = f"jbrowse add-track {url} --name {bw_id[0]} --assemblyNames {parent[0]} --category expression,{project_id} --out {os.path.abspath(self.out_dir)} --force"
                             #cmd = f"jbrowse add-track {self.from_github}/{genus}/{species}/expression/{project_id}/{bw_name} --name {bw_id[0]} --assemblyNames {parent[0]} --load copy --out {os.path.abspath(self.out_dir)} --force"
                         """
                         dis_name = self.files[collection_type][dsfile].get(
@@ -705,14 +705,14 @@ class ProcessCollections:
                                     ),  # url encode for .yml file and Jekyll linking
                                     "description": "JBrowse2 Linear Genome View",
                                 }  # the object that will be written into the .yml file
-
+                                print(f"linear data: {linear_data}")
                                 if strain_lookup not in self.infraspecies_resources:
                                     self.infraspecies_resources[strain_lookup] = (
                                         []
                                     )  # initialize infraspecies list within species
                                 if self.jbrowse_url:  # dont add data if no jbrowse url set
                                     self.infraspecies_resources[strain_lookup].append(linear_data)
-                    
+
                                 logger.debug(f"linear data for bw: {linear_data} \n")
             ###
 
