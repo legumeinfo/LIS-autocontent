@@ -198,33 +198,13 @@ class ProcessCollections:
 
                     if mode == "jbrowse":  # for jbrowse
                         if url.endswith("bw"):
-
-                            # print("\nCollection_type:dsfile: \n: ",self.files[collection_type][dsfile])
-
                             bw_name = self.files[collection_type][dsfile].get(
                                 "name", None
                             )
                             bw_id = bw_name.split(".")[-2:]
                             project_id = ".".join(bw_name.split(".")[1:-2])
-
-                            # cmd = f'jbrowse add-track {bw_name} --assemblyNames {name} --out {os.path.abspath(self.out_dir)} --load copy --force'
                             cmd = f"jbrowse add-track {url} --name {bw_id[0]} --assemblyNames {parent[0]} --category expression,{project_id} --out {os.path.abspath(self.out_dir)} --force"
-                            #cmd = f"jbrowse add-track {self.from_github}/{genus}/{species}/expression/{project_id}/{bw_name} --name {bw_id[0]} --assemblyNames {parent[0]} --load copy --out {os.path.abspath(self.out_dir)} --force"
-                        """
-                        dis_name = self.files[collection_type][dsfile].get(
-                            "name", None
-                        )
-                        print("disname is: ", dis_name)
-                        # path = (f'{self.from_github}/{genus}/{species}/expression/')
-                        if os.path.exists(f'{self.from_github}/{genus}/{species}/expression/'):
-                            print("Directory exists!")
-                            for fname in os.listdir(f'{self.from_github}/{genus}/{species}/expression/'):
-                                # looks at for bigwigs of matching strain:
-                                if fname.endswith(f'{dis_name}.bw'):
-                                    print("\nFound big wig: ", fname, "\n")
-                                    cmd = f'jbrowse add-track {self.from_github}/{genus}/{species}/expression/{fname} --assemblyNames {name} --out {os.path.abspath(self.out_dir)} --force'
-                        else: continue
-                        """
+
                     elif mode == "blast":  # for blast
                         continue  # Not blastable at the moment
 
@@ -238,23 +218,6 @@ class ProcessCollections:
                     cmd, shell=True, executable="/bin/bash"
                 ):  # execute cmd and check exit value = 0
                     logger.error(f"Non-zero exit value: {cmd}")
-                """
-                if os.path.exists(f'{self.from_github}/{genus}/{species}/expression/'):
-                    dis_name = self.files[collection_type][dsfile].get("name", None)
-                    for fname in os.listdir(f'{self.from_github}/{genus}/{species}/expression/'):
-                        
-
-                        if fname.endswith(f'{dis_name}.bw'):
-
-                            print("\nBigwig file found: ", fname, "\n")
-                                # captures display name to match with potential bigwig files
-
-                            cmd2 = f'jbrowse add-track {self.from_github}/{genus}/{species}/expression/{fname} --assemblyNames {name} --load copy --out {os.path.abspath(self.out_dir)} --force'
-                            if subprocess.check_call(
-                                cmd2, shell=True, executable="/bin/bash"
-                            ): 
-                                logger.error(f'Couldn\'t add bigwig')
-                """
 
     def populate_jbrowse2(self, out_dir, cmds_only=False):
         """Populate jbrowse2 config object from collected objects"""
@@ -705,7 +668,7 @@ class ProcessCollections:
                                     ),  # url encode for .yml file and Jekyll linking
                                     "description": "JBrowse2 Linear Genome View",
                                 }  # the object that will be written into the .yml file
-                                # print(f"linear data: {linear_data}")
+
                                 if strain_lookup not in self.infraspecies_resources:
                                     self.infraspecies_resources[strain_lookup] = (
                                         []
