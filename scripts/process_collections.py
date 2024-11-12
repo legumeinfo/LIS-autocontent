@@ -388,7 +388,7 @@ class ProcessCollections:
                     ]
                 }
                 linear_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}"  # build the URL for the resource
-                
+
                 linear_data = {
                     "name": f"JBrowse2 {lookup}",
                     "URL": str(linear_url).replace(
@@ -578,7 +578,7 @@ class ProcessCollections:
                                     )  # add data for later writing in resources
             ###
             elif collection_type == "expression":  # add parent expr files
-                ref=""
+                ref = ""
                 # Synteny after the new changes. Parent is a tuple with both genome_main files
                 checksum_url = (
                     f"{self.datastore_url}{collection_dir}CHECKSUM.{parts[1]}.md5"
@@ -626,8 +626,8 @@ class ProcessCollections:
                                 }
                                 logger.debug(self.files[collection_type][bw_lookup])
 
-                                #url =  f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.genome_main.fna.gz"  # genome_main in datastore_url
-                                url = self.files['genomes'][parent]['url']
+                                # url =  f"{self.datastore_url}{collection_dir}{parts[0]}.{parts[1]}.genome_main.fna.gz"  # genome_main in datastore_url
+                                url = self.files["genomes"][parent]["url"]
                                 fai_url = f"{url}.fai"  # get fai file for jbrowse session construction
                                 fai_response = self.get_remote(
                                     fai_url
@@ -641,16 +641,17 @@ class ProcessCollections:
                                     logger.error(f"No fai file for: {url}")
                                     sys.exit(1)
 
-
                                 linear_session = {  # LinearGenomeView object for JBrowse2
                                     "views": [
                                         {
                                             "assembly": parent,
-                                            #sequence is currently hardcoded, don't know how "ref" works for genomes
+                                            # sequence is currently hardcoded, don't know how "ref" works for genomes
                                             "loc": f"{ref}:1-{stop}",  # JBrowse2 does not allow null loc
                                             "type": "LinearGenomeView",
-                                            "tracks": [".".join(bw_lookup.split(".")[:-1])]
-                                            #["glyma.Wm82.gnm6.ann1.expr.mixed.Kour_Boone_2014.Clark_defective"]
+                                            "tracks": [
+                                                ".".join(bw_lookup.split(".")[:-1])
+                                            ],
+                                            # ["glyma.Wm82.gnm6.ann1.expr.mixed.Kour_Boone_2014.Clark_defective"]
                                             #                                                " gff3tabix_genes " ,
                                             #                                                " volvox_filtered_vcf " ,
                                             #                                                " volvox_microarray " ,
@@ -660,7 +661,7 @@ class ProcessCollections:
                                     ]
                                 }
                                 linear_url = f"{self.jbrowse_url}/?config=config.json&session=spec-{linear_session}"  # build the URL for the resource
-                                
+
                                 linear_data = {
                                     "name": f"JBrowse2 {parent}",
                                     "URL": str(linear_url).replace(
@@ -673,8 +674,12 @@ class ProcessCollections:
                                     self.infraspecies_resources[strain_lookup] = (
                                         []
                                     )  # initialize infraspecies list within species
-                                if self.jbrowse_url:  # dont add data if no jbrowse url set
-                                    self.infraspecies_resources[strain_lookup].append(linear_data)
+                                if (
+                                    self.jbrowse_url
+                                ):  # dont add data if no jbrowse url set
+                                    self.infraspecies_resources[strain_lookup].append(
+                                        linear_data
+                                    )
                                 logger.debug(f"linear data for bw: {linear_data} \n")
             ###
 
