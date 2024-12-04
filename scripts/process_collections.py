@@ -188,7 +188,7 @@ class ProcessCollections:
                             "bam_url", None
                         )
                         if bam_url:
-
+                            bam_name = bam_url.split("/")[-1]    
                             cmd += f";jbrowse add-track -n {bam_name} --trackId {bam_name} -a {parent[1]}"
                             cmd += f" --out {os.path.abspath(self.out_dir)}/ --indexFile {bam_url}.bai {bam_url} --force"  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
@@ -201,8 +201,13 @@ class ProcessCollections:
                             bw_name = self.files[collection_type][dsfile].get(
                                 "name", None
                             )
-                            bw_id = bw_name.split(".")[-2:]
-                            project_id = ".".join(bw_name.split(".")[1:-2])
+                            #bw_id = bw_name.split(".")[-2:]
+                            #project_id = ".".join(bw_name.split(".")[1:-2])
+
+                            # count from left side instead
+                            bw_id = bw_name.split(".")[7:]
+                            project_id = ".".join(bw_name.split(".")[1:7])
+
                             cmd = f"jbrowse add-track {url} --name {bw_id[0]} --assemblyNames {parent[0]} --category expression,{project_id} --out {os.path.abspath(self.out_dir)} --force"
 
                     elif mode == "blast":  # for blast
@@ -595,7 +600,11 @@ class ProcessCollections:
                 logger.debug(checksum_response)
                 # print('\nchecksum_response: ', checksum_response,'\n')
                 if checksum_response:  # checksum SUCCESS 200
-                    for line in checksum_response.split("\n"):
+                    sorted_lines = sorted(
+                        (line for line in checksum_response.split("\n") if line.strip()), 
+                        key=lambda line: line.split()[1]
+                    )
+                    for line in sorted_lines:
                         logger.debug(line)
                         fields = line.split()
                         if fields:  # process if fields exists
