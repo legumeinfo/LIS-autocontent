@@ -1,4 +1,5 @@
 """CLI for interacting with the ProcessCollections class."""
+
 #!/usr/bin/env python3
 
 import sys
