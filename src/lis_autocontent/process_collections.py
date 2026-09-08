@@ -188,7 +188,9 @@ class ProcessCollections:
                             "bam_url", None
                         )
                         if bam_url:
-
+                            bam_name = self.files[collection_type][dsfile][
+                                "name"
+                            ].replace("paf.gz", "bam")
                             cmd += f";jbrowse add-track -n {bam_name} --trackId {bam_name} -a {parent[1]}"
                             cmd += f" --out {os.path.abspath(self.out_dir)}/ --indexFile {bam_url}.bai {bam_url} --force"  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
