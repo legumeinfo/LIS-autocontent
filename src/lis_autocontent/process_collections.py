@@ -188,9 +188,7 @@ class ProcessCollections:
                             "bam_url", None
                         )
                         if bam_url:
-                            bam_name = self.files[collection_type][dsfile][
-                                "name"
-                            ].replace("paf.gz", "bam")
+                            bam_name = os.path.basename(bam_url)
                             cmd += f";jbrowse add-track -n {bam_name} --trackId {bam_name} -a {parent[1]}"
                             cmd += f" --out {os.path.abspath(self.out_dir)}/ --indexFile {bam_url}.bai {bam_url} --force"  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
@@ -366,7 +364,7 @@ class ProcessCollections:
                     fai_url
                 )  # get fai file to build loc from
                 if fai_response:  # fai SUCCESS 200
-                    (ref, stop) = fai_response.split("\n")[0].split()[
+                    ref, stop = fai_response.split("\n")[0].split()[
                         :2
                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                     logger.debug(f"{ref},{stop}")
@@ -635,7 +633,7 @@ class ProcessCollections:
                                     fai_url
                                 )  # get fai file to build loc from
                                 if fai_response:  # fai SUCCESS 200
-                                    (ref, stop) = fai_response.split("\n")[0].split()[
+                                    ref, stop = fai_response.split("\n")[0].split()[
                                         :2
                                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                                     logger.debug(f"{ref},{stop}")
