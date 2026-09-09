@@ -11,6 +11,8 @@ from html.parser import HTMLParser
 import requests
 import yaml
 
+from catalog import NODE_README_FIELDS
+
 
 class ProcessCollections:
     """Parses Collections from the datastore_url provided. Default: https://data.legumeinfo.org"""
@@ -37,18 +39,16 @@ class ProcessCollections:
             {}
         )  # stores all files by collection type. This is used to populate output after scanning
         self.file_objects = []  # a list of all file objects to write for DSCensor nodes
-        self.collection_types = (
-            [  # collection types currently recorded from datastore_url
-                "genomes",  # fasta
-                "annotations",  # gff3
-                "diversity",  # vcf
-                "expression",  # bed, wig, bw
-                "genetic",  # bed
-                "markers",  # bed
-                "synteny",  # paf, this may be depricated now for genome_alignments
-                "genome_alignments",  # paf
-            ]
-        )  # types to search the datastore_url for
+        self.collection_types = [  # collection types currently recorded from datastore_url
+            "genomes",  # fasta
+            "annotations",  # gff3
+            "diversity",  # vcf
+            "expression",  # bed, wig, bw
+            "genetic",  # bed
+            "markers",  # bed
+            "synteny",  # paf, this may be depricated now for genome_alignments
+            "genome_alignments",  # paf
+        ]  # types to search the datastore_url for
         #        self.relationships = {'genomes': {'annotations': ...}, 'annotations': {}}  # establish related objects once this is relevant
         self.current_taxon = {}
         self.species_descriptions = (
@@ -133,23 +133,28 @@ class ProcessCollections:
                 filetype = url.split(".")[
                     -3
                 ]  # get file type from datastore file name filetype.X.gz
-                self.file_objects.append(
-                    {
-                        "filename": name,
-                        "filetype": filetype,
-                        "canonical_type": filetype,
-                        "url": url,
-                        "counts": self.files[collection_type][dsfile].get(
-                            "counts", None
-                        ),
-                        "busco": self.files[collection_type][dsfile].get("busco", None),
-                        "genus": genus,
-                        "species": species,
-                        "origin": "LIS",
-                        "infraspecies": infraspecies,
-                        "derived_from": parent,
-                    }
-                )  # object for DSCensor node
+                node = {
+                    "filename": name,
+                    "filetype": filetype,
+                    "canonical_type": filetype,
+                    "collection_type": collection_type,
+                    "url": url,
+                    "counts": self.files[collection_type][dsfile].get("counts", None),
+                    "busco": self.files[collection_type][dsfile].get("busco", None),
+                    "genus": genus,
+                    "species": species,
+                    "origin": "LIS",
+                    "infraspecies": infraspecies,
+                    "derived_from": parent,
+                }
+                # Published metadata captured off the collection README. Without this
+                # the node carries no DOI, no taxid and no assembly conventions, and
+                # every consumer has to re-fetch the README to get them back.
+                for field in NODE_README_FIELDS:
+                    value = self.files[collection_type][dsfile].get(field)
+                    if value not in (None, "", [], {}, 0):
+                        node[field] = value
+                self.file_objects.append(node)  # object for DSCensor node
                 ### possibly break out next section into methods: blast, jbrowse, then types
 
                 if collection_type == "genomes":  # add genome
@@ -364,7 +369,7 @@ class ProcessCollections:
                     fai_url
                 )  # get fai file to build loc from
                 if fai_response:  # fai SUCCESS 200
-                    (ref, stop) = fai_response.split("\n")[0].split()[
+                    ref, stop = fai_response.split("\n")[0].split()[
                         :2
                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                     logger.debug(f"{ref},{stop}")
@@ -633,7 +638,7 @@ class ProcessCollections:
                                     fai_url
                                 )  # get fai file to build loc from
                                 if fai_response:  # fai SUCCESS 200
-                                    (ref, stop) = fai_response.split("\n")[0].split()[
+                                    ref, stop = fai_response.split("\n")[0].split()[
                                         :2
                                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                                     logger.debug(f"{ref},{stop}")
@@ -695,12 +700,22 @@ class ProcessCollections:
                 readme = yaml.load(readme_response, Loader=yaml.FullLoader)
                 logger.debug(readme)
                 synopsis = readme["synopsis"]
-                taxid = readme["taxid"]
-                if lookup in self.files[collection_type]:
-                    self.files[collection_type][lookup][
-                        "taxid"
-                    ] = taxid  # set taxid if available for this file object
-                else:
+                # Carry the published metadata onto every file entry from this
+                # collection, not just the collection-level one: a collection yields
+                # several entries ("<lookup>", "<lookup>.protein", ...) and each becomes
+                # its own node. Anything not copied here is silently lost -- which is
+                # how publication_doi and taxid used to disappear.
+                metadata = {}
+                for field in NODE_README_FIELDS:
+                    value = readme.get(field)
+                    if value not in (None, "", [], {}):
+                        metadata[field] = value
+                matched = 0
+                for key in self.files[collection_type]:
+                    if key == lookup or key.startswith(f"{lookup}."):
+                        self.files[collection_type][key].update(metadata)
+                        matched += 1
+                if not matched:
                     logger.debug(f"{lookup} not in {self.files[collection_type]}")
                 print(
                     f"    - collection: {name}",

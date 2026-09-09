@@ -1,9 +1,11 @@
 """CLI for interacting with the ProcessCollections class."""
+
 #!/usr/bin/env python3
 
 import sys
 import logging
 import click
+from catalog import CatalogBuilder
 from process_collections import ProcessCollections
 
 
@@ -196,3 +198,67 @@ def populate_blast(taxa_list, blast_out, from_github, cmds_only, log_file, log_l
     parser.parse_collections(taxa_list, from_github)  # parse_collections
     logger.info("Creating BLAST DBs...")
     parser.populate_blast(blast_out, cmds_only)  # populate BLAST
+
+
+@click.command()
+@click.option(
+    "--from_github",
+    default="./datastore-metadata",
+    help="""Path to datastore-metadata github directory. (Default: ./datastore-metadata).""",
+)
+@click.option(
+    "--catalog_out",
+    default="./autocontent/catalog.json",
+    help="""Output path for the catalog document. (Default: ./autocontent/catalog.json)""",
+)
+@click.option(
+    "--datastore_url",
+    default="https://data.legumeinfo.org",
+    help="""URL the catalog should build file links against.""",
+)
+@click.option(
+    "--indent",
+    default=0,
+    help="""JSON indent. 0 (default) writes the compact form intended for shipping.""",
+)
+@click.option(
+    "--verify",
+    is_flag=True,
+    help="""Confirm every convention-derived filename with a HEAD request before it
+    enters the catalog. Off by default so the build stays offline and takes ~2s; on, it
+    costs ~1,650 requests and ~90s but marks those files 'verified' rather than
+    'predicted'. Collections that publish a CHECKSUM are unaffected either way.""",
+)
+@click.option(
+    "--log_file",
+    default="./populate-catalog.log",
+    help="""Log file to output messages. (default: ./populate-catalog.log)""",
+)
+@click.option(
+    "--log_level",
+    default="INFO",
+    help="""Log Level to output messages. (default: INFO)""",
+)
+def populate_catalog(
+    from_github, catalog_out, datastore_url, indent, log_file, log_level
+):
+    """CLI entry for populate-catalog
+
+    Builds the whole-store catalog from a datastore-metadata checkout. Unlike the
+    other subcommands this needs no network and no taxa list: it describes every
+    collection the checkout knows about, in one document.
+    """
+    logger = setup_logging(log_file, log_level, "populate-catalog")
+    builder = CatalogBuilder(
+        from_github, logger=logger, datastore_url=datastore_url, verify=verify
+    )
+    logger.info(
+        "Building catalog from %s (%s)...",
+        from_github,
+        (
+            "verifying predicted files"
+            if verify
+            else "offline; predicted files unverified"
+        ),
+    )
+    builder.write(catalog_out, indent=indent or None)
