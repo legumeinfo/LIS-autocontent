@@ -60,9 +60,14 @@ def populate_jekyll(taxa_list, collections_out, from_github, log_file, log_level
 
 @click.command()
 @click.option(
+    "--taxa_list",
+    default="../_data/taxon_list.yml",
+    help="""Taxa.yml file. (Default: ../_data/taxon_list.yml)""",
+)
+@click.option(
     "--nodes_out",
     default="./autocontent",
-    help="""Output for dscensor nodes.""",
+    help="""Output directory for DSCensor nodes. (Default: ./autocontent)""",
 )
 @click.option(
     "--from_github",
@@ -79,14 +84,14 @@ def populate_jekyll(taxa_list, collections_out, from_github, log_file, log_level
     default="INFO",
     help="""Log Level to output messages. (default: INFO)""",
 )
-def populate_dscensor(nodes_out, from_github, log_file, log_level):
+def populate_dscensor(taxa_list, nodes_out, from_github, log_file, log_level):
     """CLI entry for populate-dscensor"""
     logger = setup_logging(log_file, log_level, "populate-dscensor")
-    parser = ProcessCollections(logger, out_dir=nodes_out)
-    logger.info("Processing Collections...")
-    parser.parse_collections(from_github)
+    parser = ProcessCollections(logger, out_dir=nodes_out)  # initialize class
+    logger.info(f"Processing Collections from {taxa_list}")
+    parser.parse_collections(taxa_list, from_github)  # parse_collections
     logger.info("Creating DSCensor Nodes...")
-    parser.populate_dscensor(nodes_out)
+    parser.populate_dscensor(nodes_out)  # populate DSCensor nodes
 
 
 @click.command()
