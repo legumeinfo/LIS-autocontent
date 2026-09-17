@@ -25,10 +25,10 @@ class ProcessCollections:
         self.logger = logger
         if self.logger:
             self.logger.info("logger initialized")
-        else:  # logger object required
+        else:
             print("logger required to initialize process_collections")
             sys.exit(1)
-        self.from_github = None  # read from github
+        self.from_github = None
         self.collections = []  # stores all collections from self.parse_attributes
         self.datastore_url = datastore_url  # URL to search for collections
         self.jbrowse_url = jbrowse_url  # URL to append jbrowse2 sessions
