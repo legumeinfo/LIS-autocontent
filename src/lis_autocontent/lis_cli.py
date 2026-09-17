@@ -66,8 +66,8 @@ def populate_jekyll(taxa_list, collections_out, from_github, log_file, log_level
 )
 @click.option(
     "--nodes_out",
-    default="./autocontent",
-    help="""Output directory for DSCensor nodes. (Default: ./autocontent)""",
+    default="./dscensor_nodes",
+    help="""Output directory for DSCensor nodes. (Default: ./dscensor_nodes)""",
 )
 @click.option(
     "--from_github",
@@ -108,8 +108,8 @@ def populate_dscensor(taxa_list, nodes_out, from_github, log_file, log_level):
 )
 @click.option(
     "--jbrowse_out",
-    default="./autocontent",
-    help="""Output directory for Jbrowse2. (Default: ./autocontent)""",
+    default="./dscensor_nodes",
+    help="""Output directory for Jbrowse2. (Default: ./dscensor_nodes)""",
 )
 @click.option(
     "--from_github",
@@ -166,8 +166,8 @@ def populate_jbrowse2(
 )
 @click.option(
     "--blast_out",
-    default="./autocontent",
-    help="""Output directory for BLAST DBs. (Default: ./autocontent)""",
+    default="./blast_out",
+    help="""Output directory for BLAST DBs. (Default: ./blastout)""",
 )
 @click.option(
     "--from_github",
