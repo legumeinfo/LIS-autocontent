@@ -1,10 +1,11 @@
 """CLI for interacting with the ProcessCollections class."""
+
 #!/usr/bin/env python3
 
 import sys
 import logging
 import click
-from process_collections import ProcessCollections
+from .process_collections import ProcessCollections
 
 
 def setup_logging(log_file, log_level, process):
@@ -65,8 +66,8 @@ def populate_jekyll(taxa_list, collections_out, from_github, log_file, log_level
 )
 @click.option(
     "--nodes_out",
-    default="./autocontent",
-    help="""Output for dscensor nodes.""",
+    default="./dscensor_nodes",
+    help="""Output directory for DSCensor nodes. (Default: ./dscensor_nodes)""",
 )
 @click.option(
     "--from_github",
@@ -87,10 +88,10 @@ def populate_dscensor(taxa_list, nodes_out, from_github, log_file, log_level):
     """CLI entry for populate-dscensor"""
     logger = setup_logging(log_file, log_level, "populate-dscensor")
     parser = ProcessCollections(logger, out_dir=nodes_out)  # initialize class
-    logger.info("Processing Collections...")
+    logger.info(f"Processing Collections from {taxa_list}")
     parser.parse_collections(taxa_list, from_github)  # parse_collections
     logger.info("Creating DSCensor Nodes...")
-    parser.populate_dscensor(nodes_out)  # populate JBrowse2
+    parser.populate_dscensor(nodes_out)  # populate DSCensor nodes
 
 
 @click.command()
@@ -107,8 +108,8 @@ def populate_dscensor(taxa_list, nodes_out, from_github, log_file, log_level):
 )
 @click.option(
     "--jbrowse_out",
-    default="./autocontent",
-    help="""Output directory for Jbrowse2. (Default: ./autocontent)""",
+    default="./dscensor_nodes",
+    help="""Output directory for Jbrowse2. (Default: ./dscensor_nodes)""",
 )
 @click.option(
     "--from_github",
@@ -165,8 +166,8 @@ def populate_jbrowse2(
 )
 @click.option(
     "--blast_out",
-    default="./autocontent",
-    help="""Output directory for BLAST DBs. (Default: ./autocontent)""",
+    default="./blast_out",
+    help="""Output directory for BLAST DBs. (Default: ./blastout)""",
 )
 @click.option(
     "--from_github",

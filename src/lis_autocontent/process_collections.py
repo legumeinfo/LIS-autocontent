@@ -25,10 +25,10 @@ class ProcessCollections:
         self.logger = logger
         if self.logger:
             self.logger.info("logger initialized")
-        else:  # logger object required
+        else:
             print("logger required to initialize process_collections")
             sys.exit(1)
-        self.from_github = None  # read from github
+        self.from_github = None
         self.collections = []  # stores all collections from self.parse_attributes
         self.datastore_url = datastore_url  # URL to search for collections
         self.jbrowse_url = jbrowse_url  # URL to append jbrowse2 sessions
@@ -188,7 +188,7 @@ class ProcessCollections:
                             "bam_url", None
                         )
                         if bam_url:
-
+                            bam_name = os.path.basename(bam_url)
                             cmd += f";jbrowse add-track -n {bam_name} --trackId {bam_name} -a {parent[1]}"
                             cmd += f" --out {os.path.abspath(self.out_dir)}/ --indexFile {bam_url}.bai {bam_url} --force"  # add BAM alignment track for genome_alignments
                     elif mode == "blast":  # for blast
@@ -242,13 +242,14 @@ class ProcessCollections:
         if out_dir:  # set output directory
             self.out_dir = out_dir
         pathlib.Path(self.out_dir).mkdir(parents=True, exist_ok=True)
+        self.file_objects = []  # reset so repeated calls do not duplicate nodes
         self.process_collections(True, "dscensor")  # process collections for DSCensor
         for node in self.file_objects:  # write all processed objects to node files
-            node_out = open(
-                f'{self.out_dir}/{node["filename"]}.json', "w", encoding="utf-8"
-            )  # file to write node to
-            node_out.write(json.dumps(node))
-            node_out.close()
+            node_file = f'{self.out_dir}/{node["filename"]}.json'
+            with open(node_file, "w", encoding="utf-8") as node_out:
+                json.dump(node, node_out)
+            self.logger.debug(f"Wrote DSCensor node: {node_file}")
+        self.logger.info(f"Wrote {len(self.file_objects)} DSCensor nodes to {self.out_dir}")
 
     def parse_busco(self, busco_url):
         """Grab BUSCOs from remote busco_url"""
@@ -364,7 +365,7 @@ class ProcessCollections:
                     fai_url
                 )  # get fai file to build loc from
                 if fai_response:  # fai SUCCESS 200
-                    (ref, stop) = fai_response.split("\n")[0].split()[
+                    ref, stop = fai_response.split("\n")[0].split()[
                         :2
                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                     logger.debug(f"{ref},{stop}")
@@ -633,7 +634,7 @@ class ProcessCollections:
                                     fai_url
                                 )  # get fai file to build loc from
                                 if fai_response:  # fai SUCCESS 200
-                                    (ref, stop) = fai_response.split("\n")[0].split()[
+                                    ref, stop = fai_response.split("\n")[0].split()[
                                         :2
                                     ]  # fai field 1\s+2. field 1 is sequence_id field 2 is length
                                     logger.debug(f"{ref},{stop}")
@@ -852,9 +853,15 @@ class ProcessCollections:
         self, target="../_data/taxon_list.yml", from_github="./datastore-metadata"
     ):  # refactored from SammyJava
         """Retrieve and output collections for jekyll site"""
-        if from_github:  # set to None if empty dir
+        if from_github and os.path.isdir(from_github):  # use local clone
             self.from_github = os.path.abspath(from_github)
-        self.logger.debug(f"THIS IS GITHUB: {self.from_github}")
+            self.logger.info(f"Reading from local datastore-metadata: {self.from_github}")
+        else:  # fall back to the remote datastore
+            self.from_github = None
+            if from_github:
+                self.logger.warning(
+                    f"{from_github} is not a directory, reading from {self.datastore_url}"
+                )
         taxon_list = yaml.load(
             open(target, "r", encoding="utf-8").read(), Loader=yaml.FullLoader
         )  # load taxon list
